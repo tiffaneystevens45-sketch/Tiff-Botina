@@ -1,0 +1,26 @@
+[
+  {
+    "whatsappId": "27745684339@c.us",
+    "language": "en",
+    "menuState": "language_selection",
+    "childBirthDate": null,
+    "lastReminderSent": null,
+    "chatHistory": []
+  },
+  {
+    "whatsappId": "27824115486@c.us",
+    "language": "en",
+    "menuState": "main",
+    "childBirthDate": "2023-05-12",
+    "lastReminderSent": null,
+    "chatHistory": []
+  },
+  {
+    "whatsappId": "27812155670@c.us",
+    "language": "en",
+    "menuState": "main",
+    "childBirthDate": "2024-12-16",
+    "lastReminderSent": null,
+    "chatHistory": []
+  }
+]

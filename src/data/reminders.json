@@ -1,0 +1,47 @@
+[
+  {
+    "name": "BCG (Tuberculosis) & OPV (Oral Polio Vaccine)",
+    "age_in_weeks": 0,
+    "type": "birth"
+  },
+  {
+    "name": "OPV (1), RV (1), DTaP-IPV-Hib-HepB (1), PCV (1)",
+    "age_in_weeks": 6,
+    "type": "weeks"
+  },
+  {
+    "name": "DTaP-IPV-Hib-HepB (2)",
+    "age_in_weeks": 10,
+    "type": "weeks"
+  },
+  {
+    "name": "RV (2), DTaP-IPV-Hib-HepB (3), PCV (2)",
+    "age_in_weeks": 14,
+    "type": "weeks"
+  },
+  {
+    "name": "Measles (1)",
+    "age_in_weeks": 26,
+    "type": "months"
+  },
+  {
+    "name": "PCV (3)",
+    "age_in_weeks": 39,
+    "type": "months"
+  },
+  {
+    "name": "Measles (2)",
+    "age_in_weeks": 52,
+    "type": "months"
+  },
+  {
+    "name": "DTaP-IPV-Hib-HepB (4)",
+    "age_in_weeks": 78,
+    "type": "months"
+  },
+  {
+    "name": "Td (Tetanus, reduced dose Diphtheria vaccine)",
+    "age_in_weeks": 312,
+    "type": "years"
+  }
+]

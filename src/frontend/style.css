@@ -1,0 +1,371 @@
+/* Basic Resets & Typography */
+body {
+    font-family: 'Inter', Arial, sans-serif; /* Using Inter font from Google Fonts */
+    margin: 0;
+    padding: 0;
+    line-height: 1.6;
+    color: #333;
+    background-color: #f8f8f8; /* Light background for overall page */
+    -webkit-font-smoothing: antialiased; /* Smoother font rendering */
+    -moz-osx-font-smoothing: grayscale;
+}
+
+.container {
+    max-width: 1000px; /* Slightly wider container for better desktop layout */
+    margin: 0 auto;
+    padding: 20px;
+}
+
+h1, h2, h3 {
+    text-align: center;
+    color: #2c3e50; /* Darker text for headings */
+    margin-bottom: 20px;
+    font-weight: 600; /* Slightly bolder headings */
+}
+
+h1 {
+    font-size: 2.5em; /* Increased mobile-first font size for more impact */
+    color: #2980b9; /* A calming blue for the main headline */
+    line-height: 1.2;
+}
+
+h2 {
+    font-size: 1.8em; /* Mobile first font size */
+    color: #34495e;
+}
+
+h3 {
+    font-size: 1.3em; /* Mobile first font size */
+    color: #3498db; /* A brighter blue for sub-headings */
+}
+
+p {
+    text-align: center;
+    margin-bottom: 15px;
+    font-size: 1em;
+}
+
+/* Hero Section */
+.hero-section {
+    background: linear-gradient(135deg, #e0f2f7, #d4eaf1); /* Soft, calming gradient */
+    padding: 40px 20px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    border-bottom-left-radius: 20px; /* Rounded bottom corners */
+    border-bottom-right-radius: 20px;
+}
+
+.hero-section .sub-headline {
+    font-size: 1.1em;
+    color: #555;
+    max-width: 600px;
+    margin: 15px auto 30px auto;
+}
+
+.hero-image {
+    max-width: 90%; /* Responsive image size */
+    height: auto;
+    margin-top: 25px;
+    border-radius: 12px; /* More rounded corners for images */
+    box-shadow: 0 8px 20px rgba(0,0,0,0.15); /* Stronger shadow for visual pop */
+    display: block; /* Ensures margin auto works */
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.cta-button {
+    display: inline-block;
+    background-color: #2ecc71; /* A friendly, inviting green */
+    color: white;
+    padding: 15px 35px;
+    border-radius: 50px; /* Pill-shaped button */
+    text-decoration: none;
+    font-size: 1.1em; /* Mobile first font size */
+    font-weight: 700; /* Bold text */
+    margin-top: 30px;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    box-shadow: 0 4px 10px rgba(46, 204, 113, 0.3); /* Green shadow */
+}
+
+.cta-button:hover {
+    background-color: #27ae60;
+    transform: translateY(-2px); /* Slight lift on hover */
+}
+
+.language-info {
+    font-size: 0.85em;
+    color: #666;
+    margin-top: 20px;
+    font-weight: 500;
+}
+
+/* Features Section */
+.features-section {
+    padding: 50px 20px;
+    background-color: #ffffff;
+}
+
+.feature-grid {
+    display: grid;
+    grid-template-columns: 1fr; /* Single column on mobile */
+    gap: 30px;
+    margin-top: 40px;
+}
+
+.feature-item {
+    background-color: #f4f8f9; /* Light background for feature cards */
+    padding: 25px;
+    border-radius: 10px; /* Rounded corners for cards */
+    box-shadow: 0 3px 8px rgba(0,0,0,0.08); /* Subtle shadow */
+    text-align: center;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.feature-item:hover {
+    transform: translateY(-7px); /* More pronounced lift on hover */
+    box-shadow: 0 6px 15px rgba(0,0,0,0.12);
+}
+
+.feature-item img {
+    max-width: 80px; /* Slightly increased icon size for better visibility on mobile */
+    height: auto;
+    margin-bottom: 15px;
+    border-radius: 8px; /* Rounded corners for icons */
+}
+
+.feature-item h3 {
+    margin-top: 0;
+    font-size: 1.2em; /* Slightly smaller feature titles */
+    margin-bottom: 10px;
+}
+
+.feature-item p {
+    font-size: 0.95em;
+    color: #555;
+}
+
+/* Trust Section */
+.trust-section {
+    background-color: #e6f7e6; /* Very light green for reassurance */
+    padding: 50px 20px;
+    text-align: center;
+    border-radius: 15px; /* Rounded section corners */
+    margin: 30px 20px; /* Add margin to separate from other sections */
+}
+
+.trust-section p {
+    max-width: 700px;
+    margin: 0 auto 25px auto;
+    font-size: 1.05em;
+    color: #444;
+}
+
+.partner-logos {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 30px;
+    margin-top: 30px;
+}
+
+.partner-logo {
+    max-width: 100px; /* Smaller logos for mobile */
+    height: auto;
+    opacity: 0.7;
+    transition: opacity 0.3s ease;
+}
+
+.partner-logo:hover {
+    opacity: 1;
+}
+
+/* How It Works Section */
+.how-it-works-section {
+    padding: 50px 20px;
+    background-color: #f8f8f8;
+}
+
+.steps-grid {
+    display: flex;
+    flex-direction: column; /* Stack steps vertically on mobile */
+    align-items: center;
+    gap: 30px;
+    margin-top: 40px;
+}
+
+.step-item {
+    background-color: #fff;
+    padding: 25px;
+    border-radius: 10px;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.08);
+    flex: 1 1 100%; /* Full width on mobile */
+    max-width: 350px; /* Max width for individual step on mobile */
+    text-align: center;
+}
+
+.step-item .step-number {
+    display: inline-flex; /* For centering number */
+    justify-content: center;
+    align-items: center;
+    font-size: 2em; /* Slightly smaller step numbers */
+    font-weight: 700;
+    color: white;
+    background-color: #3498db; /* Blue for step numbers */
+    width: 50px;
+    height: 50px;
+    border-radius: 50%; /* Circular numbers */
+    margin-bottom: 15px;
+    box-shadow: 0 2px 5px rgba(52, 152, 219, 0.4);
+}
+
+.step-item p {
+    font-size: 1em;
+    color: #444;
+}
+
+/* Testimonials Section */
+.testimonials-section {
+    padding: 50px 20px;
+    background-color: #ecf0f1; /* Light grey for testimonials */
+}
+
+.testimonial-grid {
+    display: grid;
+    grid-template-columns: 1fr; /* Single column on mobile */
+    gap: 30px;
+    margin: 20px auto;
+    max-width: 800px; /* Max width for testimonial grid */
+}
+
+.testimonial-item {
+    background-color: #fff;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.08);
+    text-align: center;
+    font-style: italic;
+    position: relative;
+}
+
+.testimonial-item p {
+    font-size: 1.05em;
+    margin-bottom: 15px;
+    color: #333;
+}
+
+.testimonial-item span {
+    display: block;
+    font-weight: 600;
+    color: #555;
+    margin-top: 15px;
+    font-style: normal; /* Reset italic for name */
+}
+
+/* Sticky CTA Section */
+.sticky-cta-section {
+    background-color: #2c3e50; /* Dark background for strong contrast */
+    padding: 30px 20px;
+    text-align: center;
+    color: white;
+    /* For actual sticky behavior, you'd use position: sticky; bottom: 0; */
+    /* and potentially JavaScript to toggle visibility based on scroll. */
+}
+
+.sticky-cta-section p {
+    font-size: 1.1em;
+    margin-bottom: 20px;
+    font-weight: 500;
+}
+
+.sticky-cta-section .cta-button {
+    background-color: #2ecc71; /* Reusing the green CTA */
+    box-shadow: 0 4px 10px rgba(46, 204, 113, 0.4);
+}
+
+/* Footer */
+.main-footer {
+    background-color: #34495e; /* Darker blue-grey for footer */
+    color: white;
+    padding: 30px 20px;
+    text-align: center;
+    font-size: 0.85em;
+    border-top-left-radius: 20px; /* Rounded top corners */
+    border-top-right-radius: 20px;
+}
+
+.main-footer p {
+    margin-bottom: 8px;
+    color: #bdc3c7; /* Lighter text for readability on dark background */
+}
+
+.main-footer a {
+    color: #95a5a6; /* Lighter link color */
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.main-footer a:hover {
+    color: #ecf0f1;
+}
+
+.main-footer .built-with {
+    margin-top: 15px;
+    font-size: 0.8em;
+    color: #7f8c8d;
+}
+
+/* Mobile Responsiveness (adjustments for larger screens) */
+@media (min-width: 768px) {
+    h1 {
+        font-size: 3em;
+    }
+    h2 {
+        font-size: 2.5em;
+    }
+    h3 {
+        font-size: 1.5em;
+    }
+
+    .hero-section {
+        padding: 80px 20px;
+    }
+
+    .feature-grid {
+        grid-template-columns: repeat(2, 1fr); /* Two columns on tablets */
+    }
+
+    .steps-grid {
+        flex-direction: row; /* Display steps in a row on larger screens */
+        justify-content: center;
+        align-items: flex-start; /* Align items to the top */
+    }
+
+    .step-item {
+        flex: 1 1 30%; /* Roughly three items per row */
+        max-width: 300px; /* Limit individual step width */
+    }
+
+    .testimonial-grid {
+        grid-template-columns: repeat(2, 1fr); /* Two columns for testimonials on tablets */
+    }
+
+    .partner-logo {
+        max-width: 150px; /* Larger logos on desktop */
+    }
+}
+
+@media (min-width: 1024px) {
+    h1 {
+        font-size: 3.5em;
+    }
+    h2 {
+        font-size: 2.8em;
+    }
+    .feature-grid {
+        grid-template-columns: repeat(4, 1fr); /* Four columns on desktop */
+    }
+    .testimonial-grid {
+        grid-template-columns: repeat(2, 1fr); /* Still two columns, but wider */
+    }
+}
