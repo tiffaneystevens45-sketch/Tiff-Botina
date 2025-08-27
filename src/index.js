@@ -12,8 +12,12 @@ const { startReminderScheduler, calculateVaccineDate } = require('./utils/remind
 // ======================================================================
 
 // Initialize WhatsApp Client
+// Initialize WhatsApp Client
 const client = new Client({
-  authStrategy: new LocalAuth()
+  authStrategy: new LocalAuth(),
+  puppeteer: {
+    args: ['--no-sandbox', '--disable-setuid-sandbox']
+  }
 });
 
 // Gemini API Configuration
