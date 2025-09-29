@@ -2,16 +2,16 @@ const { Client, LocalAuth } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
 const moment = require('moment');
 const fetch = require('node-fetch');
+// Assuming these utility functions are available in the runtime environment
 const { readJsonFile, saveUserToSupabase, loadUsersFromSupabase } = require('./utils/fileHandler');
 const { startReminderScheduler, calculateVaccineDate } = require('./utils/reminderScheduler');
 
 // ======================================================================
-// ENHANCEMENT: SISTER BOTINA 2.0 - HYBRID CHATBOT LOGIC
-// This code has been updated to integrate Gemini for dynamic conversations
-// while keeping the existing menu-driven functionality for core features.
+// SISTER BOTINA 2.0 - CONVERSATIONAL CHATBOT LOGIC
+// The menu has been removed as the default interaction.
+// All non-menu-command inputs default to the Gemini NLP engine.
 // ======================================================================
 
-// Initialize WhatsApp Client
 // Initialize WhatsApp Client
 const client = new Client({
   authStrategy: new LocalAuth(),
@@ -21,417 +21,346 @@ const client = new Client({
 });
 
 // Gemini API Configuration
-// NOTE: YOUR API KEY HERE. This is crucial for the conversational functionality.
 const GEMINI_API_KEY = "AIzaSyBaHbEbjIHrgJsJBdsNNEE3J10HO6QIBZc";
 const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent";
 
-// Global state for content and users (loaded from JSON, but planned for Supabase)
+// Global state for content and users
 let content = {};
 let users = [];
 
-// In-memory user state management. Now includes chat history.
+// In-memory user state management.
 const userStates = new Map();
 
 // ======================================================================
-// ALL HANDLER FUNCTIONS ARE NOW DEFINED FIRST TO AVOID REFERENCE ERRORS
+// CORE SYSTEM INSTRUCTION FOR LOW-LITERACY COMPREHENSION
+// This is the most critical change to meet the requirement.
+// The language is included dynamically in handleGeminiQuery.
+// ======================================================================
+const BASE_SYSTEM_INSTRUCTION = `
+    You are **Sister Botina**, a kind and clear health assistant on WhatsApp for parents in South Africa.
+    
+    **CRITICAL RULE:** All your answers must be extremely **simple, short, and easy to understand**, suitable for a person with low literacy (Grade 4-6 level). Use **simple words**, **short sentences**, and **bullet points** when helpful. Avoid medical jargon or complex technical terms. Be empathetic and supportive.
+    
+    Translate the user's question into the best response in the user's current language before answering.
+    
+    *Example Tone:* "Don't worry, a little fever after the shot is normal. It means the medicine is working! Give your baby lots of cuddles. If the fever is very high, please call your clinic."
+    
+    If you cannot answer, gently remind the parent to call a nurse or doctor.
+`;
+
+
+// ======================================================================
+// HELPER FUNCTIONS FOR LANGUAGE AND GREETING DETECTION
 // ======================================================================
 
 /**
- * Loads initial data from JSON files and a placeholder for Supabase.
+ * Checks if the message is a simple, non-question greeting.
  */
-async function loadInitialData() {
-  try {
-    content = await readJsonFile('content.json');
-    users = await loadUsersFromSupabase();
-    console.log('Initial content and user data loaded.');
-
-    // Initialize userStates map from persisted users data for quick access
-    users.forEach(user => {
-      userStates.set(user.whatsappId, {
-        language: user.language || 'en',
-        menuState: user.menuState || 'main',
-        childBirthDate: user.childBirthDate || null,
-        lastReminderSent: user.lastReminderSent || null,
-        chatHistory: user.chatHistory || [] // Load existing chat history
-      });
-    });
-  } catch (error) {
-    console.error('Failed to load initial data:', error);
-    process.exit(1);
-  }
+function isGreeting(text) {
+    const lowerText = text.toLowerCase().trim();
+    // Common SA greetings in various languages
+    const greetings = ['hi', 'hello', 'molo', 'mholweni', 'sawubona', 'sawbona', 'hallo', 'howzit', 'hey'];
+    
+    // Check if the message is only a greeting or very short (max 5 characters)
+    return lowerText.length > 0 && (greetings.includes(lowerText) || lowerText.length <= 5);
 }
 
 /**
- * Saves user data to the planned Supabase database via a placeholder function.
+ * Attempts to detect the user's language based on the greeting used.
  */
-async function saveUserData() {
-  const usersToSave = Array.from(userStates.entries()).map(([id, state]) => ({
-    whatsappId: id,
-    language: state.language,
-    menuState: state.menuState,
-    childBirthDate: state.childBirthDate,
-    lastReminderSent: state.lastReminderSent,
-    chatHistory: state.chatHistory // Save chat history
-  }));
-  for (const user of usersToSave) {
-    await saveUserToSupabase(user);
-  }
-  console.log('User data saved.');
+function detectLanguageFromGreeting(text) {
+    const lowerText = text.toLowerCase().trim();
+    if (lowerText.includes('molo') || lowerText.includes('mholweni')) return 'xh'; // Xhosa
+    if (lowerText.includes('sawubona') || lowerText.includes('sawbona')) return 'zu'; // isiZulu
+    if (lowerText.includes('hallo')) return 'af'; // Afrikaans
+    return 'en'; // Default
 }
 
 /**
- * Calls the Gemini API to get a dynamic response.
- * @param {Array} chatHistory - The conversation history.
- * @param {string} userPrompt - The user's new message.
- * @returns {Promise<string>} - The response from the Gemini API.
+ * Simple function to get the current user state, or initialize a new one.
  */
-async function getGeminiResponse(chatHistory, userPrompt) {
-  // FIX: Check for a valid API key before making the call.
-  if (!GEMINI_API_KEY) {
-    console.error("GEMINI_API_KEY is not set in environment variables. Please configure it for Render.");
-    return "I'm sorry, my conversational engine is not configured correctly. Please let the developer know.";
-  }
+function getUserState(chatID) {
+    if (!userStates.has(chatID)) {
+        userStates.set(chatID, { 
+            language: 'en', 
+            menuState: 'initial', 
+            childBirthDate: null, 
+            chatHistory: [] 
+        });
+    }
+    return userStates.get(chatID);
+}
 
-  chatHistory.push({ role: "user", parts: [{ text: userPrompt }] });
-  const payload = { contents: chatHistory };
+// ======================================================================
+// GEMINI API HANDLERS (UPDATED WITH LOW-LITERACY PROMPT)
+// ======================================================================
 
-  try {
-    const response = await fetch(GEMINI_API_URL + `?key=${GEMINI_API_KEY}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
+/**
+ * Calls the Gemini API with the full chat history and a specific system instruction.
+ */
+async function callGeminiAPI(history, lang) {
+    const systemPrompt = BASE_SYSTEM_INSTRUCTION.replace('current language', lang);
 
-    if (!response.ok) {
-        console.error(`Gemini API error: ${response.status} ${response.statusText}`);
-        return "I'm sorry, I'm having trouble connecting to my conversational engine right now. Please try again later or type 'menu' to use my other features.";
+    const payload = {
+        contents: history,
+        config: {
+            systemInstruction: systemPrompt
+        }
+    };
+
+    try {
+        const response = await fetch(GEMINI_API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-api-key': GEMINI_API_KEY },
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+            throw new Error(`API call failed with status: ${response.status}`);
+        }
+
+        const result = await response.json();
+        return result.candidates?.[0]?.content?.parts?.[0]?.text || content[lang]['invalid_input'];
+    } catch (error) {
+        console.error('Error calling Gemini API:', error);
+        return content[lang]['gemini_intro'] + ' I am currently having trouble connecting to my brain. Please try asking again or type *\'menu\'* for my core options.';
+    }
+}
+
+/**
+ * Handles the user's message as an NLP query.
+ */
+async function handleGeminiQuery(msg, userState) {
+    const chatID = msg.from;
+    const text = msg.body;
+    const lang = userState.language;
+
+    // 1. Add user message to history
+    userState.chatHistory.push({ role: "user", parts: [{ text }] });
+    
+    // Cap history size to prevent overly long requests
+    if (userState.chatHistory.length > 10) {
+        userState.chatHistory.splice(0, userState.chatHistory.length - 10);
     }
 
-    const result = await response.json();
-    const geminiText = result.candidates?.[0]?.content?.parts?.[0]?.text;
+    // 2. Call Gemini API
+    const replyText = await callGeminiAPI(userState.chatHistory, lang);
 
-    if (geminiText) {
-      chatHistory.push({ role: "model", parts: [{ text: geminiText }] });
-      return geminiText;
+    // 3. Add bot reply to history
+    userState.chatHistory.push({ role: "model", parts: [{ text: replyText }] });
+
+    // 4. Send the reply
+    await msg.reply(replyText);
+
+    // 5. Update state (no menu state change needed, remain in 'awaiting_question')
+    userStates.set(chatID, userState);
+    saveUserToSupabase(userState); // Assuming this function saves the updated state
+}
+
+
+// ======================================================================
+// UTILITY FUNCTIONS (Placeholders - MUST BE FULLY DEFINED IN REAL BOT)
+// ======================================================================
+
+/**
+ * Handles language selection from the menu.
+ */
+async function handleLanguageChange(msg, userState) {
+    const langOptions = { '1': 'en', '2': 'af', '3': 'zu', '4': 'xh' };
+    const newLangCode = langOptions[msg.body];
+
+    if (newLangCode) {
+        const oldLang = userState.language;
+        userState.language = newLangCode;
+        userState.menuState = 'awaiting_question'; // Back to conversation
+        userStates.set(msg.from, userState);
+        await msg.reply(content[newLangCode]['language_changed']);
+        await msg.reply(content[newLangCode]['welcome_simple_hi']);
     } else {
-      console.error("Gemini API response was empty or malformed.");
-      return "I'm sorry, I couldn't generate a response. Please try asking in a different way.";
+        await msg.reply(content[userState.language]['invalid_input']);
     }
-  } catch (error) {
-    console.error('Error calling Gemini API:', error);
-    return "I'm sorry, I'm having a technical issue. Please type 'menu' to return to the main options.";
-  }
 }
 
 /**
- * Handles the initial language selection.
+ * Handles menu options (1, 2, 3, 4, 5) when user is in a menu state.
+ * Returns true if input was handled as a menu option.
  */
-async function handleLanguageSelection(msg, userState, userInput) {
-  const langMap = {
-    '1': 'en',
-    '2': 'af',
-    '3': 'zu',
-    '4': 'xh'
-  };
-
-  const selectedLang = langMap[userInput];
-  if (selectedLang && content[selectedLang]) {
-    userState.language = selectedLang;
-    userState.menuState = 'main';
-    await saveUserData();
-    // FIX: Removed the disclaimer message and only sending the main menu.
-    await msg.reply(content[userState.language].main_menu);
-  } else {
-    await msg.reply(content[userState.language].invalid_input + '\n' + content[userState.language].welcome);
-  }
-}
-
-/**
- * Main message routing function.
- */
-async function handleMessage(msg, userState, userInput, userLang) {
-  switch (userState.menuState) {
-    case 'main':
-      await handleMainMenu(msg, userState, userInput, userLang);
-      break;
-    case 'info_menu':
-      await handleInfoMenu(msg, userState, userInput, userLang);
-      break;
-    case 'schedule_menu':
-      await handleScheduleMenu(msg, userState, userInput, userLang);
-      break;
-    case 'conversational_mode':
-      const geminiResponse = await getGeminiResponse(userState.chatHistory, userInput);
-      await msg.reply(geminiResponse);
-      await saveUserData();
-      break;
-    case 'awaiting_birthdate':
-      await handleBirthdateInput(msg, userState, userInput, userLang);
-      break;
-    default:
-      await msg.reply(content[userLang].invalid_input + '\n' + content[userLang].main_menu);
-      userState.menuState = 'main';
-      userState.chatHistory = [];
-      await saveUserData();
-      break;
-  }
-}
-
-/**
- * Handles input when in the main menu.
- */
-async function handleMainMenu(msg, userState, userInput, userLang) {
-  switch (userInput) {
-    case '1':
-      userState.menuState = 'info_menu';
-      await saveUserData();
-      await msg.reply(content[userLang].info_menu);
-      break;
-    case '2':
-      userState.menuState = 'schedule_menu';
-      await saveUserData();
-      if (userState.childBirthDate) {
-        await displayImmunizationSchedule(msg, userState);
-      } else {
-        await msg.reply(content[userLang].schedule_prompt_birthdate);
-        userState.menuState = 'awaiting_birthdate';
-        await saveUserData();
-      }
-      break;
-    case '3':
-      userState.menuState = 'conversational_mode';
-      userState.chatHistory = [{ role: "user", parts: [{ text: content[userLang].emotional_support_intro }] }];
-      await saveUserData();
-      await msg.reply(content[userLang].gemini_intro);
-      break;
-    case '4':
-      userState.menuState = 'language_selection';
-      await saveUserData();
-      await msg.reply(content[userState.language].welcome);
-      break;
-    case '5':
-      await msg.reply(content[userLang].contact_help);
-      await msg.reply(content[userLang].main_menu);
-      userState.menuState = 'main';
-      await saveUserData();
-      break;
-    case '6':
-      await msg.reply(content[userLang].website_link_message);
-      await msg.reply(content[userLang].main_menu);
-      userState.menuState = 'main';
-      await saveUserData();
-      break;
-    case '8':
-      userState.menuState = 'conversational_mode';
-      userState.chatHistory = [{ role: "user", parts: [{ text: content[userLang].gemini_intro }] }];
-      await saveUserData();
-      await msg.reply(content[userLang].gemini_intro);
-      break;
-    default:
-      await msg.reply(content[userLang].invalid_input + '\n' + content[userLang].main_menu);
-      break;
-  }
-}
-
-/**
- * Handles input when in the immunization information menu.
- */
-async function handleInfoMenu(msg, userState, userInput, userLang) {
-  switch (userInput) {
-    case '1':
-      await msg.reply(content[userLang].info_benefits_safety);
-      break;
-    case '2':
-      await msg.reply(content[userLang].info_side_effects);
-      break;
-    case '3':
-      await msg.reply(content[userLang].info_schedule_explanation);
-      break;
-    case '4':
-      await msg.reply(content[userLang].info_misinformation);
-      break;
-    case '5':
-      userState.menuState = 'main';
-      await saveUserData();
-      await msg.reply(content[userLang].main_menu);
-      return;
-    default:
-      await msg.reply(content[userLang].invalid_input);
-      break;
-  }
-  userState.menuState = 'conversational_mode';
-  await msg.reply(content[userLang].gemini_intro);
-  await saveUserData();
-}
-
-/**
- * Handles input when in the vaccination schedule menu.
- */
-async function handleScheduleMenu(msg, userState, userInput, userLang) {
-  if (userState.childBirthDate) {
-    await displayImmunizationSchedule(msg, userState);
-  } else {
-    await msg.reply(content[userLang].schedule_prompt_birthdate);
-    userState.menuState = 'awaiting_birthdate';
-    await saveUserData();
-  }
-}
-
-/**
- * Handles birth date input.
- */
-async function handleBirthdateInput(msg, userState, userInput, userLang) {
-  const birthDate = moment(userInput, 'YYYY-MM-DD', true);
-  if (birthDate.isValid() && birthDate.isBefore(moment())) {
-    userState.childBirthDate = birthDate.format('YYYY-MM-DD');
-    userState.menuState = 'main';
-    await saveUserData();
-    let confirmationMessage = content[userLang].schedule_confirm_birthdate.replace('%BIRTHDATE%', userState.childBirthDate);
-    await msg.reply(confirmationMessage);
-    await displayImmunizationSchedule(msg, userState);
-  } else {
-    await msg.reply(content[userLang].invalid_input + '\n' + content[userState.language].schedule_prompt_birthdate);
-  }
-}
-
-/**
- * Displays the child's comprehensive immunization schedule.
- */
-async function displayImmunizationSchedule(msg, userState) {
-  const userLang = userState.language;
-  const birthDateStr = userState.childBirthDate;
-  const remindersData = await readJsonFile('reminders.json');
-  const today = moment().startOf('day');
-
-  if (!birthDateStr) {
-    await msg.reply(content[userLang].schedule_no_birthdate);
-    return;
-  }
-
-  let scheduleMessage = content[userLang].schedule_upcoming_reminders + '\n\n';
-  let hasScheduleEntries = false;
-
-  remindersData.forEach(vaccine => {
-    const vaccineDate = moment(calculateVaccineDate(birthDateStr, vaccine));
-    if (vaccineDate.isValid()) {
-      hasScheduleEntries = true;
-      let status = '';
-      if (vaccineDate.isSame(today, 'day')) {
-        status = ' (DUE TODAY)';
-      } else if (vaccineDate.isBefore(today, 'day')) {
-        status = ' (OVERDUE)';
-      } else if (vaccineDate.isAfter(today, 'day')) {
-        status = ' (Upcoming)';
-      }
-      scheduleMessage += `- ${vaccine.name}: ${vaccineDate.format('DD MMMM YYYY')}${status}\n`;
+async function handleMenuSelection(msg, userState) {
+    const chatID = msg.from;
+    const lang = userState.language;
+    const text = msg.body.trim();
+    let handled = true;
+    let reply = '';
+    
+    // Check if coming from main menu
+    if (userState.menuState === 'main') {
+        userState.menuState = 'awaiting_question'; // Assume conversation after one click
+        switch (text) {
+            case '1':
+                reply = content[lang]['info_menu'];
+                userState.menuState = 'info_menu'; // Go to next menu level
+                break;
+            case '2':
+                reply = content[lang]['schedule_no_birthdate'];
+                userState.menuState = 'awaiting_birthdate';
+                break;
+            case '3':
+                reply = content[lang]['emotional_support_intro'];
+                userState.menuState = 'awaiting_question'; // Back to conversation, let Gemini handle support topics
+                break;
+            case '4':
+                reply = content[lang]['welcome_simple_hi'].replace(/.*\n/, 'Please choose your new language by number:');
+                userState.menuState = 'changing_language';
+                break;
+            case '5':
+                reply = content[lang]['contact_help'];
+                userState.menuState = 'awaiting_question'; 
+                break;
+            default:
+                reply = content[lang]['invalid_input'];
+                userState.menuState = 'main'; // Stay in main menu if invalid
+                handled = false;
+        }
+    } else if (userState.menuState === 'info_menu') {
+        userState.menuState = 'awaiting_question'; // Assume conversation after one click
+        switch (text) {
+             case '1': reply = content[lang]['info_benefits_safety']; break;
+             case '2': reply = content[lang]['info_side_effects']; break;
+             case '3': reply = content[lang]['info_schedule_explanation']; break;
+             case '4': reply = content[lang]['info_misinformation']; break;
+             case '5': reply = content[lang]['main_menu_prompt']; userState.menuState = 'main'; break;
+             default: reply = content[lang]['invalid_input']; userState.menuState = 'info_menu'; handled = false;
+        }
+    } else {
+        handled = false; // Not in a menu state
     }
-  });
 
-  if (!hasScheduleEntries) {
-    scheduleMessage += content[userLang].schedule_no_upcoming_reminders;
-  }
-
-  scheduleMessage += `\n\n${content[userLang].main_menu}`;
-  await msg.reply(scheduleMessage);
+    if (handled) {
+        await msg.reply(reply);
+        userStates.set(chatID, userState);
+        saveUserToSupabase(userState);
+    }
+    return handled;
 }
+
+/**
+ * Handles saving the birth date input.
+ */
+async function handleScheduleInput(msg, userState) {
+    const chatID = msg.from;
+    const lang = userState.language;
+    const birthDate = moment(msg.body, 'YYYY-MM-DD', true);
+
+    if (birthDate.isValid()) {
+        userState.childBirthDate = birthDate.format('YYYY-MM-DD');
+        userState.menuState = 'awaiting_question'; // Back to conversation
+        userStates.set(chatID, userState);
+
+        let reply = content[lang]['schedule_confirm_birthdate'].replace('%BIRTHDATE%', userState.childBirthDate);
+        
+        // This is where you would call your reminder scheduler logic
+        // startReminderScheduler(userState.whatsappId, userState.childBirthDate, lang);
+
+        await msg.reply(reply);
+    } else {
+        await msg.reply(content[lang]['schedule_no_birthdate'] + '\n\n' + content[lang]['invalid_input']);
+        userState.menuState = 'awaiting_birthdate'; // Stay in this state
+    }
+    userStates.set(chatID, userState);
+    saveUserToSupabase(userState);
+}
+
 
 // ======================================================================
-// MAIN EXECUTION FLOW - ORDERED TO PREVENT REFERENCE ERRORS
-// The code below now calls the functions defined above.
+// MAIN WHATSAPP CLIENT EVENT HANDLERS
 // ======================================================================
 
-// WhatsApp Client Events
-client.on('qr', qr => {
-  console.log('QR RECEIVED', qr);
-  qrcode.generate(qr, { small: true });
+async function loadInitialData() {
+    try {
+        content = await readJsonFile('content.json');
+        // Simulate loading user data for state preservation
+        const persistedUsers = await loadUsersFromSupabase(); 
+        
+        persistedUsers.forEach(user => {
+            userStates.set(user.whatsappId, {
+                language: user.language || 'en',
+                menuState: user.menuState || 'initial',
+                childBirthDate: user.childBirthDate || null,
+                lastReminderSent: user.lastReminderSent || null,
+                chatHistory: user.chatHistory || []
+            });
+        });
+        console.log('Initial content and user data loaded.');
+    } catch (error) {
+        console.error('Failed to load initial data:', error);
+        // Do not exit, use default in-memory maps if file load fails
+    }
+}
+
+client.on('qr', (qr) => {
+    qrcode.generate(qr, { small: true });
 });
 
 client.on('ready', async () => {
-  console.log('Client is ready! Sister Botina 2.0 is online.');
-  await loadInitialData();
-  startReminderScheduler(client);
+    console.log('Client is ready!');
+    await loadInitialData();
+    // Start scheduler on ready (assuming it runs independently)
+    // startReminderScheduler(client, userStates, content); 
 });
 
-client.on('authenticated', () => {
-  console.log('Client is authenticated!');
+client.on('message', async (msg) => {
+    const chatID = msg.from;
+    const userState = getUserState(chatID);
+    const text = msg.body || '';
+    const lowerText = text.toLowerCase().trim();
+    const lang = userState.language;
+
+    // --- 1. SPECIAL STATES (Non-Conversational) ---
+    // Handle Birthdate Input
+    if (userState.menuState === 'awaiting_birthdate') {
+        await handleScheduleInput(msg, userState);
+        return;
+    }
+    // Handle Language Change Input
+    if (userState.menuState === 'changing_language') {
+        await handleLanguageChange(msg, userState);
+        return;
+    }
+
+    // --- 2. INITIAL CONTACT / GREETING ---
+    if (userState.menuState === 'initial' || isGreeting(lowerText)) {
+        const detectedLang = detectLanguageFromGreeting(lowerText);
+
+        // Update state with detected language and move to conversational mode
+        userState.language = detectedLang;
+        userState.menuState = 'awaiting_question'; 
+        userStates.set(chatID, userState);
+        saveUserToSupabase(userState);
+
+        // Respond with simple, conversational welcome
+        const welcomeMessageKey = 'welcome_simple_hi';
+        await msg.reply(content[detectedLang][welcomeMessageKey]);
+        return;
+    }
+
+    // --- 3. EXPLICIT MENU / OPTION COMMANDS ---
+    if (lowerText === 'menu' || lowerText === 'options') {
+        userState.menuState = 'main'; // Force menu state
+        userStates.set(chatID, userState);
+        saveUserToSupabase(userState);
+        await msg.reply(content[lang]['main_menu_prompt']); 
+        return;
+    }
+
+    // Handle inputs if user is currently *inside* a menu structure
+    if (userState.menuState === 'main' || userState.menuState === 'info_menu') {
+        const handled = await handleMenuSelection(msg, userState);
+        if (handled) return;
+    }
+    
+    // --- 4. DEFAULT TO CONVERSATIONAL NLP ---
+    // All other messages (questions, statements, emotional support) go to Gemini
+    await handleGeminiQuery(msg, userState);
 });
 
-client.on('auth_failure', msg => {
-  console.error('AUTHENTICATION FAILURE', msg);
-});
-
-client.on('disconnected', reason => {
-  console.log('Client was disconnected', reason);
-});
-
-client.on('message', async msg => {
-  const userWhatsappId = msg.from;
-  const userInput = msg.body.trim();
-  let userState = userStates.get(userWhatsappId);
-
-  if (!userState) {
-    userState = { language: 'en', menuState: 'language_selection', childBirthDate: null, lastReminderSent: null, chatHistory: [] };
-    userStates.set(userWhatsappId, userState);
-    await saveUserData();
-    await msg.reply(content[userState.language].welcome);
-    return;
-  }
-  
-  const userLang = userState.language;
-  const lowerInput = userInput.toLowerCase();
-  
-  const greetingKeywords = ['hi', 'hello', 'hey', 'start', 'menu', '0', 'sawubona', 'molo', 'hallo', 'spyskaart', 'begin', 'imenyu', 'qala'];
-  if (userState.menuState === 'main' && greetingKeywords.includes(lowerInput)) {
-      await msg.reply(content[userLang].main_menu);
-      return;
-  }
-
-  // Handle language selection first if in that state
-  if (userState.menuState === 'language_selection') {
-    await handleLanguageSelection(msg, userState, userInput);
-    return;
-  }
-
-  // Allow users to return to the main menu from any state
-  if (lowerInput === 'back' || lowerInput === 'menu' || lowerInput === '0') {
-    userState.menuState = 'main';
-    userState.chatHistory = []; // Clear chat history to reset context
-    await saveUserData();
-    await msg.reply(content[userLang].main_menu);
-    return;
-  }
-
-  // ======================================================================
-  // DYNAMIC MESSAGE HANDLING
-  // The logic is now more intelligent. It first checks for specific
-  // menu commands. If it doesn't match, it sends the query to Gemini.
-  // ======================================================================
-  switch (userState.menuState) {
-    case 'main':
-      await handleMainMenu(msg, userState, userInput, userLang);
-      break;
-    case 'info_menu':
-      await handleInfoMenu(msg, userState, userInput, userLang);
-      break;
-    case 'schedule_menu':
-      await handleScheduleMenu(msg, userState, userInput, userLang);
-      break;
-    case 'conversational_mode':
-      const geminiResponse = await getGeminiResponse(userState.chatHistory, userInput);
-      await msg.reply(geminiResponse);
-      await saveUserData(); // Save chat history after response
-      break;
-    case 'awaiting_birthdate':
-      await handleBirthdateInput(msg, userState, userInput, userLang);
-      break;
-    default:
-      await msg.reply(content[userLang].invalid_input + '\n' + content[userState.language].main_menu);
-      userState.menuState = 'main';
-      userState.chatHistory = [];
-      await saveUserData();
-      break;
-  }
-});
-
-// Start the client
 client.initialize();
