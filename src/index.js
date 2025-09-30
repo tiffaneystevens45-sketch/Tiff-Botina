@@ -1,16 +1,19 @@
+// Sister Botina 2.0 - Natural Language WhatsApp Chatbot
+// For South African Parents - Immunization Support
+
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
 const moment = require('moment');
 const fetch = require('node-fetch');
-// Assuming these utility functions are available in the runtime environment
 const { readJsonFile, saveUserToSupabase, loadUsersFromSupabase } = require('./utils/fileHandler');
-const { startReminderScheduler, calculateVaccineDate } = require('./utils/reminderScheduler');
+const { startReminderScheduler } = require('./utils/reminderScheduler');
 
-// ======================================================================
-// SISTER BOTINA 2.0 - CONVERSATIONAL CHATBOT LOGIC
-// The menu has been removed as the default interaction.
-// All non-menu-command inputs default to the Gemini NLP engine.
-// ======================================================================
+// ============================================================================
+// CONFIGURATION
+// ============================================================================
+
+const GEMINI_API_KEY = "AIzaSyBaHbEbjIHrgJsJBdsNNEE3J10HO6QIBZc"; // Your API key
+const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent";
 
 // Initialize WhatsApp Client
 const client = new Client({
@@ -20,347 +23,329 @@ const client = new Client({
   }
 });
 
-// Gemini API Configuration
-const GEMINI_API_KEY = "AIzaSyBaHbEbjIHrgJsJBdsNNEE3J10HO6QIBZc";
-const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent";
-
-// Global state for content and users
+// Global data storage
 let content = {};
 let users = [];
-
-// In-memory user state management.
 const userStates = new Map();
 
-// ======================================================================
-// CORE SYSTEM INSTRUCTION FOR LOW-LITERACY COMPREHENSION
-// This is the most critical change to meet the requirement.
-// The language is included dynamically in handleGeminiQuery.
-// ======================================================================
-const BASE_SYSTEM_INSTRUCTION = `
-    You are **Sister Botina**, a kind and clear health assistant on WhatsApp for parents in South Africa.
-    
-    **CRITICAL RULE:** All your answers must be extremely **simple, short, and easy to understand**, suitable for a person with low literacy (Grade 4-6 level). Use **simple words**, **short sentences**, and **bullet points** when helpful. Avoid medical jargon or complex technical terms. Be empathetic and supportive.
-    
-    Translate the user's question into the best response in the user's current language before answering.
-    
-    *Example Tone:* "Don't worry, a little fever after the shot is normal. It means the medicine is working! Give your baby lots of cuddles. If the fever is very high, please call your clinic."
-    
-    If you cannot answer, gently remind the parent to call a nurse or doctor.
-`;
-
-
-// ======================================================================
-// HELPER FUNCTIONS FOR LANGUAGE AND GREETING DETECTION
-// ======================================================================
+// ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
 
 /**
- * Checks if the message is a simple, non-question greeting.
+ * Detect language from user input using keyword matching
+ */
+function detectLanguage(text) {
+  const lowerText = text.toLowerCase();
+  
+  // Afrikaans indicators
+  if (lowerText.match(/goeie|dankie|asseblief|hoe|wat|kan|jammer|help|inenting|entstof/i)) {
+    return 'af';
+  }
+  
+  // isiZulu indicators
+  if (lowerText.match(/sawubona|ngiyabonga|ngicela|kanjani|yini|usizo|ukugoma|umgomo/i)) {
+    return 'zu';
+  }
+  
+  // Xhosa indicators
+  if (lowerText.match(/molo|enkosi|nceda|njani|yintoni|uncedo|ukugonya|isithintelo/i)) {
+    return 'xh';
+  }
+  
+  // Default to English
+  return 'en';
+}
+
+/**
+ * Check if message is a greeting
  */
 function isGreeting(text) {
-    const lowerText = text.toLowerCase().trim();
-    // Common SA greetings in various languages
-    const greetings = ['hi', 'hello', 'molo', 'mholweni', 'sawubona', 'sawbona', 'hallo', 'howzit', 'hey'];
+  const greetings = [
+    'hi', 'hello', 'hey', 'molo', 'sawubona', 'hallo', 
+    'molweni', 'sanibonani', 'heita', 'howzit', 'good morning',
+    'good afternoon', 'good evening', 'goeiedag', 'goeiemore'
+  ];
+  
+  const lowerText = text.toLowerCase().trim();
+  return greetings.some(greeting => 
+    lowerText === greeting || lowerText.startsWith(greeting + ' ')
+  );
+}
+
+/**
+ * Extract birth date from message (format: YYYY-MM-DD)
+ */
+function extractBirthDate(text) {
+  const datePattern = /(\d{4})-(\d{2})-(\d{2})/;
+  const match = text.match(datePattern);
+  
+  if (match) {
+    const date = moment(match[0], 'YYYY-MM-DD', true);
+    if (date.isValid() && date.isBefore(moment()) && date.isAfter(moment().subtract(5, 'years'))) {
+      return match[0];
+    }
+  }
+  return null;
+}
+
+/**
+ * Check if user is asking for emergency help
+ */
+function isEmergencyRequest(text) {
+  const emergencyKeywords = [
+    'emergency', 'urgent', 'help me', 'emergency number', 'ambulance',
+    'noodgeval', 'dringend', 'help my', 'ambulans',
+    'isimo esiphuthumayo', 'ngishesha', 'ngisize', 'i-ambulensi',
+    'ungxamiseko', 'ngxamisekile', 'nceda', 'i-ambulensi'
+  ];
+  
+  const lowerText = text.toLowerCase();
+  return emergencyKeywords.some(keyword => lowerText.includes(keyword));
+}
+
+/**
+ * Check if user is asking about the website
+ */
+function isWebsiteRequest(text) {
+  const websiteKeywords = [
+    'website', 'webwerf', 'iwebhusayithi', 'iwebhusayithi',
+    'online', 'link', 'url', 'community', 'forum'
+  ];
+  
+  const lowerText = text.toLowerCase();
+  return websiteKeywords.some(keyword => lowerText.includes(keyword));
+}
+
+// ============================================================================
+// GEMINI API INTEGRATION
+// ============================================================================
+
+/**
+ * Build system prompt based on language and context
+ */
+function buildSystemPrompt(language, userState) {
+  const languageNames = {
+    en: 'English',
+    af: 'Afrikaans', 
+    zu: 'isiZulu',
+    xh: 'Xhosa'
+  };
+  
+  let prompt = `You are Sister Botina, a friendly WhatsApp chatbot helping South African parents with child immunizations.
+
+CRITICAL RULES:
+1. Respond ONLY in ${languageNames[language]}
+2. Keep responses SHORT - maximum 3-4 sentences
+3. Use VERY SIMPLE language for people with low literacy levels
+4. Be warm, kind, and never judgmental
+5. Break complex words into simpler ones
+6. If medical terms needed, explain them simply
+7. For serious medical concerns, always say "Please visit your clinic"
+
+YOUR PERSONALITY:
+- Like a caring older sister or nurse
+- Patient and understanding
+- Encouraging and positive
+- Never make parents feel guilty
+
+CONTEXT ABOUT THIS USER:`;
+
+  if (userState.childBirthDate) {
+    const age = moment().diff(moment(userState.childBirthDate), 'months');
+    prompt += `\n- Child's birth date: ${userState.childBirthDate} (${age} months old)`;
+    prompt += `\n- Can calculate which vaccines are due`;
+  } else {
+    prompt += `\n- Child's birth date NOT provided yet`;
+    prompt += `\n- If they ask about schedule, gently ask for birth date in format YYYY-MM-DD`;
+  }
+  
+  prompt += `
+
+SOUTH AFRICAN VACCINATION SCHEDULE:
+- Birth: BCG (for TB), OPV (polio drops)
+- 6 weeks: OPV, Rotavirus, 6-in-1 injection, Pneumonia vaccine
+- 10 weeks: 6-in-1 injection (2nd), Pneumonia vaccine (2nd)
+- 14 weeks: 6-in-1 injection (3rd), Pneumonia vaccine (3rd), Rotavirus (2nd)
+- 9 months: Measles injection
+- 18 months: Booster injections, Measles (2nd)
+
+COMMON PARENT WORRIES (address these with empathy):
+- "Are vaccines safe?" → Yes, very safe. Millions of children get them
+- "Too many vaccines at once?" → Safe! Baby's immune system can handle it
+- "Side effects?" → Usually mild: sore spot, slight fever. Goes away quickly
+- "I missed an appointment" → It's okay! Just go to clinic soon to catch up
+- "Natural immunity better?" → No, getting sick is more dangerous than vaccine
+
+IMPORTANT REMINDERS:
+- Always bring Road-to-Health book to clinic
+- All vaccines are FREE at government clinics
+- It's never too late to catch up on missed vaccines
+
+RESPONSE STYLE:
+❌ BAD: "Immunization is crucial for developing immunity against vaccine-preventable diseases."
+✅ GOOD: "Vaccines help protect your baby from getting very sick. They're safe and free at the clinic!"
+
+❌ BAD: "The DTaP-IPV-Hib-HepB vaccine contains antigens that..."
+✅ GOOD: "Your baby will get one injection that protects against 6 diseases. It's safe!"`;
+
+  return prompt;
+}
+
+/**
+ * Call Gemini API for natural language response
+ */
+async function callGeminiAPI(systemPrompt, userMessage, chatHistory) {
+  const messages = [
+    { 
+      role: 'user', 
+      parts: [{ text: systemPrompt }] 
+    },
+    { 
+      role: 'model', 
+      parts: [{ text: 'I understand. I will help parents with simple, kind, and clear advice about child vaccines in their language.' }] 
+    }
+  ];
+  
+  // Add recent chat history for context (last 3 exchanges = 6 messages)
+  chatHistory.slice(-6).forEach(msg => {
+    messages.push({
+      role: msg.role === 'user' ? 'user' : 'model',
+      parts: [{ text: msg.content }]
+    });
+  });
+  
+  const requestBody = {
+    contents: messages,
+    generationConfig: {
+      temperature: 0.8,
+      maxOutputTokens: 250,
+      topP: 0.9,
+      topK: 40
+    },
+    safetySettings: [
+      {
+        category: "HARM_CATEGORY_HARASSMENT",
+        threshold: "BLOCK_MEDIUM_AND_ABOVE"
+      },
+      {
+        category: "HARM_CATEGORY_HATE_SPEECH",
+        threshold: "BLOCK_MEDIUM_AND_ABOVE"
+      },
+      {
+        category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+        threshold: "BLOCK_MEDIUM_AND_ABOVE"
+      },
+      {
+        category: "HARM_CATEGORY_DANGEROUS_CONTENT",
+        threshold: "BLOCK_MEDIUM_AND_ABOVE"
+      }
+    ]
+  };
+  
+  const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(requestBody)
+  });
+  
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error('Gemini API error:', errorText);
+    throw new Error(`Gemini API error: ${response.statusText}`);
+  }
+  
+  const data = await response.json();
+  
+  if (!data.candidates || data.candidates.length === 0) {
+    throw new Error('No response from Gemini API');
+  }
+  
+  return data.candidates[0].content.parts[0].text;
+}
+
+// ============================================================================
+// MESSAGE HANDLERS
+// ============================================================================
+
+/**
+ * Send welcome message
+ */
+async function sendWelcomeMessage(message, language) {
+  const welcomeText = content[language].welcome;
+  await message.reply(welcomeText);
+}
+
+/**
+ * Handle emergency requests
+ */
+async function handleEmergencyRequest(message, language) {
+  const emergencyText = content[language].emergency_contacts;
+  await message.reply(emergencyText);
+}
+
+/**
+ * Handle website requests
+ */
+async function handleWebsiteRequest(message, language) {
+  const websiteText = content[language].website_info;
+  await message.reply(websiteText);
+}
+
+/**
+ * Process natural language query through Gemini
+ */
+async function processNaturalLanguageQuery(message, userState) {
+  const userMessage = message.body.trim();
+  const language = userState.language;
+  
+  // Add to chat history
+  userState.chatHistory.push({
+    role: 'user',
+    content: userMessage,
+    timestamp: new Date()
+  });
+  
+  // Build context-aware prompt
+  const systemPrompt = buildSystemPrompt(language, userState);
+  
+  try {
+    // Call Gemini API
+    const response = await callGeminiAPI(systemPrompt, userMessage, userState.chatHistory);
     
-    // Check if the message is only a greeting or very short (max 5 characters)
-    return lowerText.length > 0 && (greetings.includes(lowerText) || lowerText.length <= 5);
-}
-
-/**
- * Attempts to detect the user's language based on the greeting used.
- */
-function detectLanguageFromGreeting(text) {
-    const lowerText = text.toLowerCase().trim();
-    if (lowerText.includes('molo') || lowerText.includes('mholweni')) return 'xh'; // Xhosa
-    if (lowerText.includes('sawubona') || lowerText.includes('sawbona')) return 'zu'; // isiZulu
-    if (lowerText.includes('hallo')) return 'af'; // Afrikaans
-    return 'en'; // Default
-}
-
-/**
- * Simple function to get the current user state, or initialize a new one.
- */
-function getUserState(chatID) {
-    if (!userStates.has(chatID)) {
-        userStates.set(chatID, { 
-            language: 'en', 
-            menuState: 'initial', 
-            childBirthDate: null, 
-            chatHistory: [] 
-        });
-    }
-    return userStates.get(chatID);
-}
-
-// ======================================================================
-// GEMINI API HANDLERS (UPDATED WITH LOW-LITERACY PROMPT)
-// ======================================================================
-
-/**
- * Calls the Gemini API with the full chat history and a specific system instruction.
- */
-async function callGeminiAPI(history, lang) {
-    const systemPrompt = BASE_SYSTEM_INSTRUCTION.replace('current language', lang);
-
-    const payload = {
-        contents: history,
-        config: {
-            systemInstruction: systemPrompt
-        }
-    };
-
-    try {
-        const response = await fetch(GEMINI_API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'x-api-key': GEMINI_API_KEY },
-            body: JSON.stringify(payload)
-        });
-
-        if (!response.ok) {
-            throw new Error(`API call failed with status: ${response.status}`);
-        }
-
-        const result = await response.json();
-        return result.candidates?.[0]?.content?.parts?.[0]?.text || content[lang]['invalid_input'];
-    } catch (error) {
-        console.error('Error calling Gemini API:', error);
-        return content[lang]['gemini_intro'] + ' I am currently having trouble connecting to my brain. Please try asking again or type *\'menu\'* for my core options.';
-    }
-}
-
-/**
- * Handles the user's message as an NLP query.
- */
-async function handleGeminiQuery(msg, userState) {
-    const chatID = msg.from;
-    const text = msg.body;
-    const lang = userState.language;
-
-    // 1. Add user message to history
-    userState.chatHistory.push({ role: "user", parts: [{ text }] });
-    
-    // Cap history size to prevent overly long requests
-    if (userState.chatHistory.length > 10) {
-        userState.chatHistory.splice(0, userState.chatHistory.length - 10);
-    }
-
-    // 2. Call Gemini API
-    const replyText = await callGeminiAPI(userState.chatHistory, lang);
-
-    // 3. Add bot reply to history
-    userState.chatHistory.push({ role: "model", parts: [{ text: replyText }] });
-
-    // 4. Send the reply
-    await msg.reply(replyText);
-
-    // 5. Update state (no menu state change needed, remain in 'awaiting_question')
-    userStates.set(chatID, userState);
-    saveUserToSupabase(userState); // Assuming this function saves the updated state
-}
-
-
-// ======================================================================
-// UTILITY FUNCTIONS (Placeholders - MUST BE FULLY DEFINED IN REAL BOT)
-// ======================================================================
-
-/**
- * Handles language selection from the menu.
- */
-async function handleLanguageChange(msg, userState) {
-    const langOptions = { '1': 'en', '2': 'af', '3': 'zu', '4': 'xh' };
-    const newLangCode = langOptions[msg.body];
-
-    if (newLangCode) {
-        const oldLang = userState.language;
-        userState.language = newLangCode;
-        userState.menuState = 'awaiting_question'; // Back to conversation
-        userStates.set(msg.from, userState);
-        await msg.reply(content[newLangCode]['language_changed']);
-        await msg.reply(content[newLangCode]['welcome_simple_hi']);
+    // Extract birth date if provided
+    const birthDate = extractBirthDate(userMessage);
+    if (birthDate && !userState.childBirthDate) {
+      userState.childBirthDate = birthDate;
+      userState.hasProvidedBirthDate = true;
+      
+      // Save to database
+      await saveUserToSupabase({
+        whatsappId: message.from,
+        language: userState.language,
+        childBirthDate: birthDate,
+        chatHistory: userState.chatHistory
+      });
+      
+      // Send confirmation
+      const confirmMessage = content[language].birthdate_confirmed.replace('%BIRTHDATE%', birthDate);
+      await message.reply(confirmMessage);
+      
+      // Then send the AI response
+      await message.reply(response);
     } else {
-        await msg.reply(content[userState.language]['invalid_input']);
-    }
-}
-
-/**
- * Handles menu options (1, 2, 3, 4, 5) when user is in a menu state.
- * Returns true if input was handled as a menu option.
- */
-async function handleMenuSelection(msg, userState) {
-    const chatID = msg.from;
-    const lang = userState.language;
-    const text = msg.body.trim();
-    let handled = true;
-    let reply = '';
-    
-    // Check if coming from main menu
-    if (userState.menuState === 'main') {
-        userState.menuState = 'awaiting_question'; // Assume conversation after one click
-        switch (text) {
-            case '1':
-                reply = content[lang]['info_menu'];
-                userState.menuState = 'info_menu'; // Go to next menu level
-                break;
-            case '2':
-                reply = content[lang]['schedule_no_birthdate'];
-                userState.menuState = 'awaiting_birthdate';
-                break;
-            case '3':
-                reply = content[lang]['emotional_support_intro'];
-                userState.menuState = 'awaiting_question'; // Back to conversation, let Gemini handle support topics
-                break;
-            case '4':
-                reply = content[lang]['welcome_simple_hi'].replace(/.*\n/, 'Please choose your new language by number:');
-                userState.menuState = 'changing_language';
-                break;
-            case '5':
-                reply = content[lang]['contact_help'];
-                userState.menuState = 'awaiting_question'; 
-                break;
-            default:
-                reply = content[lang]['invalid_input'];
-                userState.menuState = 'main'; // Stay in main menu if invalid
-                handled = false;
-        }
-    } else if (userState.menuState === 'info_menu') {
-        userState.menuState = 'awaiting_question'; // Assume conversation after one click
-        switch (text) {
-             case '1': reply = content[lang]['info_benefits_safety']; break;
-             case '2': reply = content[lang]['info_side_effects']; break;
-             case '3': reply = content[lang]['info_schedule_explanation']; break;
-             case '4': reply = content[lang]['info_misinformation']; break;
-             case '5': reply = content[lang]['main_menu_prompt']; userState.menuState = 'main'; break;
-             default: reply = content[lang]['invalid_input']; userState.menuState = 'info_menu'; handled = false;
-        }
-    } else {
-        handled = false; // Not in a menu state
-    }
-
-    if (handled) {
-        await msg.reply(reply);
-        userStates.set(chatID, userState);
-        saveUserToSupabase(userState);
-    }
-    return handled;
-}
-
-/**
- * Handles saving the birth date input.
- */
-async function handleScheduleInput(msg, userState) {
-    const chatID = msg.from;
-    const lang = userState.language;
-    const birthDate = moment(msg.body, 'YYYY-MM-DD', true);
-
-    if (birthDate.isValid()) {
-        userState.childBirthDate = birthDate.format('YYYY-MM-DD');
-        userState.menuState = 'awaiting_question'; // Back to conversation
-        userStates.set(chatID, userState);
-
-        let reply = content[lang]['schedule_confirm_birthdate'].replace('%BIRTHDATE%', userState.childBirthDate);
-        
-        // This is where you would call your reminder scheduler logic
-        // startReminderScheduler(userState.whatsappId, userState.childBirthDate, lang);
-
-        await msg.reply(reply);
-    } else {
-        await msg.reply(content[lang]['schedule_no_birthdate'] + '\n\n' + content[lang]['invalid_input']);
-        userState.menuState = 'awaiting_birthdate'; // Stay in this state
-    }
-    userStates.set(chatID, userState);
-    saveUserToSupabase(userState);
-}
-
-
-// ======================================================================
-// MAIN WHATSAPP CLIENT EVENT HANDLERS
-// ======================================================================
-
-async function loadInitialData() {
-    try {
-        content = await readJsonFile('content.json');
-        // Simulate loading user data for state preservation
-        const persistedUsers = await loadUsersFromSupabase(); 
-        
-        persistedUsers.forEach(user => {
-            userStates.set(user.whatsappId, {
-                language: user.language || 'en',
-                menuState: user.menuState || 'initial',
-                childBirthDate: user.childBirthDate || null,
-                lastReminderSent: user.lastReminderSent || null,
-                chatHistory: user.chatHistory || []
-            });
-        });
-        console.log('Initial content and user data loaded.');
-    } catch (error) {
-        console.error('Failed to load initial data:', error);
-        // Do not exit, use default in-memory maps if file load fails
-    }
-}
-
-client.on('qr', (qr) => {
-    qrcode.generate(qr, { small: true });
-});
-
-client.on('ready', async () => {
-    console.log('Client is ready!');
-    await loadInitialData();
-    // Start scheduler on ready (assuming it runs independently)
-    // startReminderScheduler(client, userStates, content); 
-});
-
-client.on('message', async (msg) => {
-    const chatID = msg.from;
-    const userState = getUserState(chatID);
-    const text = msg.body || '';
-    const lowerText = text.toLowerCase().trim();
-    const lang = userState.language;
-
-    // --- 1. SPECIAL STATES (Non-Conversational) ---
-    // Handle Birthdate Input
-    if (userState.menuState === 'awaiting_birthdate') {
-        await handleScheduleInput(msg, userState);
-        return;
-    }
-    // Handle Language Change Input
-    if (userState.menuState === 'changing_language') {
-        await handleLanguageChange(msg, userState);
-        return;
-    }
-
-    // --- 2. INITIAL CONTACT / GREETING ---
-    if (userState.menuState === 'initial' || isGreeting(lowerText)) {
-        const detectedLang = detectLanguageFromGreeting(lowerText);
-
-        // Update state with detected language and move to conversational mode
-        userState.language = detectedLang;
-        userState.menuState = 'awaiting_question'; 
-        userStates.set(chatID, userState);
-        saveUserToSupabase(userState);
-
-        // Respond with simple, conversational welcome
-        const welcomeMessageKey = 'welcome_simple_hi';
-        await msg.reply(content[detectedLang][welcomeMessageKey]);
-        return;
-    }
-
-    // --- 3. EXPLICIT MENU / OPTION COMMANDS ---
-    if (lowerText === 'menu' || lowerText === 'options') {
-        userState.menuState = 'main'; // Force menu state
-        userStates.set(chatID, userState);
-        saveUserToSupabase(userState);
-        await msg.reply(content[lang]['main_menu_prompt']); 
-        return;
-    }
-
-    // Handle inputs if user is currently *inside* a menu structure
-    if (userState.menuState === 'main' || userState.menuState === 'info_menu') {
-        const handled = await handleMenuSelection(msg, userState);
-        if (handled) return;
+      // Just send the AI response
+      await message.reply(response);
     }
     
-    // --- 4. DEFAULT TO CONVERSATIONAL NLP ---
-    // All other messages (questions, statements, emotional support) go to Gemini
-    await handleGeminiQuery(msg, userState);
-});
-
-client.initialize();
+    // Add assistant response to history
+    userState.chatHistory.push({
+      role: 'assistant',
+      content: response,
+      timestamp: new Date()
+    });
+    
+    // Keep only last 10 exchanges (20 messages) to manage memory
+    if (userState.chatHistory.length > 20) {
+      userState.chatHistory = userState.chatHistory.slice(-20);
+    }
