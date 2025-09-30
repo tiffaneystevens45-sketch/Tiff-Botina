@@ -1,66 +1,174 @@
 {
-    "en": {
-        "welcome_simple_hi": "Hello! I am Sister Botina. I am here to help you with your child's health and immunisations. How can I help you today?",
-        "gemini_intro": "I am here to help! ",
-        "language_changed": "I have changed my language to English. How can I help you?",
-        "invalid_input": "I do not understand that. Please try to ask your question simply, or type *'menu'* for my main options.",
-        "main_menu_prompt": "I can help you with these things. Please reply with the number:\n\n1. Learn about the **Vaccine**\n2. Get a **Vaccine Schedule**\n3. Talk about how you **Feel** (emotional support)\n4. **Change** my language\n5. **Find help** (contact a clinic)",
-        "schedule_no_birthdate": "To help you make a schedule, I need your child's birth date. Please send it like this: **YYYY-MM-DD** (Example: 2024-05-15)",
-        "schedule_confirm_birthdate": "Thank you! I have saved your child's birthday as **%BIRTHDATE%**. I will send you reminders for their next shots.",
-        "emotional_support_intro": "I hear you, being a parent is hard. You can tell me how you are feeling, or ask me for simple tips to feel better. I am here to listen.",
-        "contact_help": "If your child is very sick, please **call a doctor or go to the nearest clinic** right away. You can also call the National Health Hotline for more information.",
-        "info_menu": "What do you want to learn about? Reply with the number:\n\n1. Why are vaccines **important**?\n2. What about **side effects**?\n3. How does the **schedule** work?\n4. Are there **false stories** about vaccines?\n5. Go back to **main menu**",
-        "info_benefits_safety": "Vaccines are safe and protect your child from getting very sick. They work like a shield for your baby's body.",
-        "info_side_effects": "It is normal for babies to have a slight fever or pain where the shot was given. Give them cuddles and simple pain medicine (like paracetamol) if the nurse said it is okay.",
-        "info_schedule_explanation": "The schedule tells us the best time for your baby to get each shot so they are protected when they need it most.",
-        "info_misinformation": "There are many untrue stories about vaccines. If you read something that worries you, ask me about it or call your clinic nurse."
-    },
-    "af": {
-        "welcome_simple_hi": "Hallo! Ek is Suster Botina. Ek is hier om jou te help met jou kind se gesondheid en inentings. Hoe kan ek jou vandag help?",
-        "gemini_intro": "Ek is hier om te help! ",
-        "language_changed": "Ek het my taal na Afrikaans verander. Hoe kan ek jou help?",
-        "invalid_input": "Ek verstaan dit nie. Probeer asseblief om jou vraag eenvoudig te vra, of tik *'menu'* vir my hoofopsies.",
-        "main_menu_prompt": "Ek kan jou met hierdie dinge help. Antwoord asseblief met die nommer:\n\n1. Leer oor die **Inenting**\n2. Kry 'n **Inentingskedule**\n3. Praat oor hoe jy **Voel** (emosionele ondersteuning)\n4. **Verander** my taal\n5. **Vind hulp** (kontak 'n kliniek)",
-        "schedule_no_birthdate": "Om jou te help met 'n skedule, het ek jou kind se geboortedatum nodig. Stuur dit asseblief so: **JJJJ-MM-DD** (Voorbeeld: 2024-05-15)",
-        "schedule_confirm_birthdate": "Dankie! Ek het jou kind se verjaarsdag as **%BIRTHDATE%** gestoor. Ek sal vir jou aanmanings stuur vir hul volgende inspuitings.",
-        "emotional_support_intro": "Ek hoor jou, om 'n ouer te wees is moeilik. Jy kan my vertel hoe jy voel, of vir my eenvoudige wenke vra om beter te voel. Ek is hier om te luister.",
-        "contact_help": "As jou kind baie siek is, **bel 'n dokter of gaan dadelik na die naaste kliniek**. Jy kan ook die Nasionale Gesondheidslyn bel vir meer inligting.",
-        "info_menu": "Waaroor wil jy leer? Antwoord met die nommer:\n\n1. Hoekom is inentings **belangrik**?\n2. Wat van **newe-effekte**?\n3. Hoe werk die **skedule**?\n4. Is daar **vals stories** oor inentings?\n5. Gaan terug na die **hoofkieslys**",
-        "info_benefits_safety": "Inentings is veilig en beskerm jou kind daarteen om baie siek te word. Hulle werk soos 'n skild vir jou baba se liggaam.",
-        "info_side_effects": "'n Klein bietjie koors of pyn waar die inspuiting was, is normaal vir babas. Gee hulle drukkies en eenvoudige pynmedisyne (soos parasetamol) as die suster gesê het dit is reg.",
-        "info_schedule_explanation": "Die skedule vertel ons die beste tyd vir jou baba om elke inspuiting te kry, sodat hulle beskerm is wanneer hulle dit die nodigste het.",
-        "info_misinformation": "Daar is baie onwaar stories oor inentings. As jy iets lees wat jou bekommer, vra my daaroor of bel jou klinieksuster."
-    },
-    "zu": {
-        "welcome_simple_hi": "Sawubona! NginguSista Botina. Ngilapha ukuzokusiza ngezempilo yengane yakho kanye nemigomo. Ngingakusiza kanjani namuhla?",
-        "gemini_intro": "Ngilapha ukuzokusiza! ",
-        "language_changed": "Ngishintshe ulimi lwami lwaba isiZulu. Ngingakusiza kanjani?",
-        "invalid_input": "Angikuqondi lokho. Ngicela uzame ukubuza umbuzo wakho kalula, noma uthayiphe u-*'menu'* ukuze uthole izinketho zami eziyinhloko.",
-        "main_menu_prompt": "Ngingakusiza ngalezi zinto. Ngicela uphendule ngenombolo:\n\n1. Funda mayelana **nomgomo**\n2. Thola **uhlelo lomgomo**\n3. Khuluma mayelana **nomuzwa** wakho (usizo ngokomoya)\n4. **Shintsha** ulimi lwami\n5. **Thola usizo** (xhumana nomtholampilo)",
-        "schedule_no_birthdate": "Ukuze ngikusize ngenhlelo, ngidinga usuku lokuzalwa lwengane yakho. Ngicela uluthumele kanje: **YYYY-MM-DD** (Isibonelo: 2024-05-15)",
-        "schedule_confirm_birthdate": "Ngiyabonga! Ngigcine usuku lokuzalwa lwengane yakho njengo **%BIRTHDATE%**. Ngizokuthumelela izikhumbuzo zamagomo alandelayo.",
-        "emotional_support_intro": "Ngiyakuzwa, ukuba umzali kunzima. Ungangitshela ukuthi uzizwa kanjani, noma ungicele amathiphu alula okuzizwa ungcono. Ngilapha ukuzolalela.",
-        "contact_help": "Uma ingane yakho igula kakhulu, **shayela udokotela noma uye emtholampilo oseduzane** ngokushesha. Ungaphinda ushayele i-National Health Hotline ukuze uthole ulwazi olwengeziwe.",
-        "info_menu": "Ufuna ukufunda ngani? Phendula ngenombolo:\n\n1. Kungani imigomo **ibalulekile**?\n2. Kuthiwani **ngemiphumela** eseceleni?\n3. Lusebenza kanjani **uhlelo**?\n4. Zikhona **izindaba zamanga** mayelana nemigomo?\n5. Buyela **kumenyu enkulu**",
-        "info_benefits_safety": "Imigomo iphephile futhi ivikela ingane yakho ekuguleni kakhulu. Isebenza njengesihlangu somzimba wengane yakho.",
-        "info_side_effects": "Kujwayelekile ukuthi izingane zibe nomkhuhlane omncane noma ubuhlungu lapho umgomo ufakwe khona. Banikeze ukugona nemithi elula yobuhlungu (njenge-paracetamol) uma umhlengikazi ethe kulungile.",
-        "info_schedule_explanation": "Uhlelo lusitshela isikhathi esingcono kakhulu sokuthi ingane yakho ithole umgomo ngamunye ukuze ivikeleke lapho ikudinga kakhulu.",
-        "info_misinformation": "Kunezindaba eziningi ezingezona iqiniso ngemigomo. Uma ufunda okuthile okukukhathazayo, ngibuze ngakho noma shayela umhlengikazi womtholampilo wakho."
-    },
-    "xh": {
-        "welcome_simple_hi": "Molo! NdinguSista Botina. Ndilapha ukuza kukunceda ngempilo yomntwana wakho kunye nezitofu. Ndingakunceda njani namhlanje?",
-        "gemini_intro": "Ndilapha ukuza kukunceda! ",
-        "language_changed": "Nditshintshe ulwimi lwam lwaba sisiXhosa. Ndingakunceda njani?",
-        "invalid_input": "Andiyiqondi loo nto. Nceda uzame ukubuza umbuzo wakho ngokulula, okanye uchwetheze u-*'menu'* ukufumana iindlela zam eziphambili.",
-        "main_menu_prompt": "Ndingakunceda ngezi zinto. Nceda uphendule ngenombolo:\n\n1. Funda malunga **nesitofu**\n2. Fumana **Ishedyuli yesitofu**\n3. Thetha ngendlela **Oziva** ngayo (inkxaso ngokweemvakalelo)\n4. **Tshintsha** ulwimi lwam\n5. **Fumana uncedo** (qhagamshelana nekliniki)",
-        "schedule_no_birthdate": "Ukuze ndikuncede ngeshedyuli, ndifuna umhla wokuzalwa komntwana wakho. Nceda uwuthumele ngolu hlobo: **YYYY-MM-DD** (Umzekelo: 2024-05-15)",
-        "schedule_confirm_birthdate": "Enkosi! Ndigcine umhla wokuzalwa komntwana wakho njengo **%BIRTHDATE%**. Ndiza kukuthumelela izikhumbuzo zezitofu ezilandelayo.",
-        "emotional_support_intro": "Ndiyakuva, ukuba ngumzali kunzima. Ungandixelela ukuba uziva njani, okanye undicele iingcebiso ezilula zokuziva ungcono. Ndiyeza ndikulindele.",
-        "contact_help": "Ukuba umntwana wakho ugula kakhulu, **fowunela ugqirha okanye uye kwikliniki ekufutshane** ngoku. Ungaphinda ufowunele i-National Health Hotline ukuze ufumane ulwazi oluthe vetshe.",
-        "info_menu": "Ufuna ukufunda ngantoni? Phendula ngenombolo:\n\n1. Kutheni izitofu **zibalulekile**?\n2. Kuthekani **ngeziphumo** ezincinci?\n3. Isebenza njani **ishedyuli**?\n4. Zikhona **iimbali zobuxoki** malunga nezitofu?\n5. Buyela **kwimenyu enkulu**",
-        "info_benefits_safety": "Izitofu zikhuselekile kwaye zikhusela umntwana wakho ekuguleni kakhulu. Zisebenza njengekhaka lomzimba womntwana wakho.",
-        "info_side_effects": "Kuqhelekile ukuba iintsana zibe nomkhuhlane omncinci okanye intlungu apho ifakwe khona isitofu. Banike abanga-abanga namayeza alula entlungu (njenge-paracetamol) ukuba umongikazi uthe kulungile.",
-        "info_schedule_explanation": "Ishedyuli isixelela elona xesha lilungileyo lokuba umntwana wakho afumane isitofu ngasinye ukuze akhuselwe xa efuna kakhulu.",
-        "info_misinformation": "Zininzi iimbali zobuxoki malunga nezitofu. Ukuba ufunda into ekukhathazayo, ndibuze ngayo okanye fowunela umongikazi wekliniki yakho."
+  "en": {
+    "welcome": "Hello! I'm Sister Botina. I help parents with child vaccinations in South Africa.\n\nI can help you with:\n• Vaccine information\n• Your child's vaccine schedule\n• Answering your questions\n• Emotional support\n\nWhat would you like to know?",
+    "error_message": "Sorry, I'm having trouble right now. Please try again in a moment.",
+    "ask_birthdate": "To give you the right vaccine schedule, I need your child's birth date. Please share it like this: 2024-01-15 (year-month-day)",
+    "birthdate_confirmed": "Thank you! I've saved your child's birth date as %BIRTHDATE%. I'll remind you about upcoming vaccines. Remember to bring your Road-to-Health book to the clinic.",
+    "birthdate_invalid": "I didn't understand that date. Please write it like this: 2024-01-15 (year-month-day)",
+    "reminder_message": "⏰ REMINDER: Your child has a vaccination due on %VACCINE_DATE% for %VACCINE_NAME%.\n\nBring your Road-to-Health book to the clinic.\n\nAny questions? Just ask me!",
+    "emergency_contacts": "🏥 EMERGENCY NUMBERS\n\n🚨 Life-threatening emergencies:\n📞 10177\n\n🚑 ER24:\n📞 084 124\n\n🚑 Netcare 911:\n📞 082 911\n\n☎️ Health advice (free):\n📞 0800 029 999",
+    "website_info": "Visit our website for more help:\nhttps://sister-botina-companion-app-744.created.app/\n\nYou can find clinics and join our parent community!",
+    "data_privacy": "🔒 Your information is safe with me. I only use your child's birth date to send you vaccine reminders. All data is protected under POPIA (South African privacy law).",
+    "vaccine_schedule": {
+      "birth": {
+        "vaccines": ["BCG", "OPV 0"],
+        "age": "At birth",
+        "description": "First vaccines to protect against TB and polio"
+      },
+      "6_weeks": {
+        "vaccines": ["OPV 1", "RV 1", "DTaP-IPV-Hib-HepB 1", "PCV 1"],
+        "age": "6 weeks old",
+        "description": "Important vaccines for polio, rotavirus, and other diseases"
+      },
+      "10_weeks": {
+        "vaccines": ["DTaP-IPV-Hib-HepB 2", "PCV 2"],
+        "age": "10 weeks old",
+        "description": "Second round of vaccines"
+      },
+      "14_weeks": {
+        "vaccines": ["DTaP-IPV-Hib-HepB 3", "PCV 3", "RV 2"],
+        "age": "14 weeks old",
+        "description": "Third round of vaccines"
+      },
+      "9_months": {
+        "vaccines": ["Measles 1"],
+        "age": "9 months old",
+        "description": "First measles vaccine"
+      },
+      "18_months": {
+        "vaccines": ["DTaP-IPV-Hib", "Measles 2"],
+        "age": "18 months old",
+        "description": "Booster vaccines for continued protection"
+      }
     }
+  },
+  "af": {
+    "welcome": "Hallo! Ek is Suster Botina. Ek help ouers met kinderinentings in Suid-Afrika.\n\nEk kan jou help met:\n• Inligting oor entstowwe\n• Jou kind se inentingskedule\n• Antwoorde op jou vrae\n• Emosionele ondersteuning\n\nWaarmee kan ek jou help?",
+    "error_message": "Jammer, ek ondervind tans probleme. Probeer asseblief oor 'n oomblik weer.",
+    "ask_birthdate": "Om jou die regte inentingskedule te gee, benodig ek jou kind se geboortedatum. Deel dit asseblief so: 2024-01-15 (jaar-maand-dag)",
+    "birthdate_confirmed": "Dankie! Ek het jou kind se geboortedatum gestoor as %BIRTHDATE%. Ek sal jou herinner oor komende inentings. Onthou om jou Pad-na-Gesondheid boek kliniek toe te bring.",
+    "birthdate_invalid": "Ek het nie daardie datum verstaan nie. Skryf dit asseblief so: 2024-01-15 (jaar-maand-dag)",
+    "reminder_message": "⏰ HERINNERING: Jou kind het 'n inenting op %VACCINE_DATE% vir %VACCINE_NAME%.\n\nBring jou Pad-na-Gesondheid boek kliniek toe.\n\nEnige vrae? Vra gerus!",
+    "emergency_contacts": "🏥 NOODNOMMERS\n\n🚨 Lewensgevaarlike noodgevalle:\n📞 10177\n\n🚑 ER24:\n📞 084 124\n\n🚑 Netcare 911:\n📞 082 911\n\n☎️ Gesondheidsadvies (gratis):\n📞 0800 029 999",
+    "website_info": "Besoek ons webwerf vir meer hulp:\nhttps://sister-botina-companion-app-744.created.app/\n\nJy kan klinieke vind en by ons ouergemeenskap aansluit!",
+    "data_privacy": "🔒 Jou inligting is veilig by my. Ek gebruik net jou kind se geboortedatum om jou inentingsherinneringe te stuur. Alle data word beskerm onder POPIA (Suid-Afrikaanse privaatheidsreg).",
+    "vaccine_schedule": {
+      "birth": {
+        "vaccines": ["BCG", "OPV 0"],
+        "age": "By geboorte",
+        "description": "Eerste entstowwe om teen TB en polio te beskerm"
+      },
+      "6_weeks": {
+        "vaccines": ["OPV 1", "RV 1", "DTaP-IPV-Hib-HepB 1", "PCV 1"],
+        "age": "6 weke oud",
+        "description": "Belangrike entstowwe vir polio, rotavirus en ander siektes"
+      },
+      "10_weeks": {
+        "vaccines": ["DTaP-IPV-Hib-HepB 2", "PCV 2"],
+        "age": "10 weke oud",
+        "description": "Tweede ronde entstowwe"
+      },
+      "14_weeks": {
+        "vaccines": ["DTaP-IPV-Hib-HepB 3", "PCV 3", "RV 2"],
+        "age": "14 weke oud",
+        "description": "Derde ronde entstowwe"
+      },
+      "9_months": {
+        "vaccines": ["Masels 1"],
+        "age": "9 maande oud",
+        "description": "Eerste maselsentstof"
+      },
+      "18_months": {
+        "vaccines": ["DTaP-IPV-Hib", "Masels 2"],
+        "age": "18 maande oud",
+        "description": "Opknapper entstowwe vir voortgesette beskerming"
+      }
+    }
+  },
+  "zu": {
+    "welcome": "Sawubona! NginguSister Botina. Ngisiza abazali ngokugoma kwezingane eNingizimu Afrika.\n\nNgingakusiza ngalokhu:\n• Ulwazi mayelana nemigomo\n• Isheduli yokugoma yengane yakho\n• Ukuphendula imibuzo yakho\n• Ukwesekwa ngokomzwelo\n\nYini ongithanda ukuyazi?",
+    "error_message": "Ngiyaxolisa, nginenkinga manje. Sicela uzame futhi emizuzwini embalwa.",
+    "ask_birthdate": "Ukuze ngikuphe isheduli yokugoma efanele, ngidinga usuku lokuzalwa lwengane yakho. Sicela ulwabelane ngalo kanje: 2024-01-15 (unyaka-inyanga-usuku)",
+    "birthdate_confirmed": "Ngiyabonga! Ngigcine usuku lokuzalwa lwengane yakho njengo-%BIRTHDATE%. Ngizokukhumbuza ngokugoma okuzayo. Khumbula ukuletha incwadi yakho ye-Road-to-Health emtholampilo.",
+    "birthdate_invalid": "Angiqondi lelo suku. Sicela ulibhale kanje: 2024-01-15 (unyaka-inyanga-usuku)",
+    "reminder_message": "⏰ ISIKHUMBUZI: Ingane yakho inokugoma ngo-%VACCINE_DATE% kwe-%VACCINE_NAME%.\n\nLetha incwadi yakho ye-Road-to-Health emtholampilo.\n\nUnemibuzo? Ngibuze nje!",
+    "emergency_contacts": "🏥 IZINOMBOLO ZESIMO ESIPHUTHUMAYO\n\n🚨 Izimo eziphuthumayo eziyingozi empilweni:\n📞 10177\n\n🚑 ER24:\n📞 084 124\n\n🚑 Netcare 911:\n📞 082 911\n\n☎️ Izeluleko zezempilo (mahhala):\n📞 0800 029 999",
+    "website_info": "Vakashela iwebhusayithi yethu ukuze uthole usizo olwengeziwe:\nhttps://sister-botina-companion-app-744.created.app/\n\nUngathola imitholampilo futhi ujoyine umphakathi wabazali bethu!",
+    "data_privacy": "🔒 Ulwazi lwakho luphephile nami. Ngisebenzisa kuphela usuku lokuzalwa lwengane yakho ukukuthumelela izikhumbuzi zokugoma. Yonke imininingwane ivikelwe ngaphansi kwe-POPIA (umthetho wobumfihlo waseNingizimu Afrika).",
+    "vaccine_schedule": {
+      "birth": {
+        "vaccines": ["BCG", "OPV 0"],
+        "age": "Lapho kuzalwa",
+        "description": "Imigomo yokuqala yokuvikela i-TB nepoliyo"
+      },
+      "6_weeks": {
+        "vaccines": ["OPV 1", "RV 1", "DTaP-IPV-Hib-HepB 1", "PCV 1"],
+        "age": "Amaviki angu-6 ubudala",
+        "description": "Imigomo ebalulekile yepoliyo, rotavirus nezinye izifo"
+      },
+      "10_weeks": {
+        "vaccines": ["DTaP-IPV-Hib-HepB 2", "PCV 2"],
+        "age": "Amaviki ayi-10 ubudala",
+        "description": "Umjikelezo wesibili wemigomo"
+      },
+      "14_weeks": {
+        "vaccines": ["DTaP-IPV-Hib-HepB 3", "PCV 3", "RV 2"],
+        "age": "Amaviki ayi-14 ubudala",
+        "description": "Umjikelezo wesithathu wemigomo"
+      },
+      "9_months": {
+        "vaccines": ["Masisi 1"],
+        "age": "Izinyanga ezingu-9 ubudala",
+        "description": "Umgomo wokuqala wemasisi"
+      },
+      "18_months": {
+        "vaccines": ["DTaP-IPV-Hib", "Masisi 2"],
+        "age": "Izinyanga ezingu-18 ubudala",
+        "description": "Imigomo yokuqinisa ukuvikelwa okuqhubekayo"
+      }
+    }
+  },
+  "xh": {
+    "welcome": "Molo! NdinguSister Botina. Ndinceda abazali ngokugonya kwabantwana eMzantsi Afrika.\n\nNdingakunceda ngoku:\n• Ulwazi malunga nezithinteli\n• Ishedyuli yokugonya yomntwana wakho\n• Ukuphendula imibuzo yakho\n• Inkxaso yeemvakalelo\n\nYintoni ofuna ukuyazi?",
+    "error_message": "Uxolo, ndinengxaki ngoku. Nceda uzame kwakhona kwakamsinyane.",
+    "ask_birthdate": "Ukuze ndikunike ishedyuli efanelekileyo yokugonya, ndifuna umhla wokuzalwa womntwana wakho. Nceda uwabelane ngalo ngolu hlobo: 2024-01-15 (unyaka-inyanga-usuku)",
+    "birthdate_confirmed": "Enkosi! Ndigcine umhla wokuzalwa womntwana wakho njengo-%BIRTHDATE%. Ndiza kukukhumbuza ngokugonya okuzayo. Khumbula ukuzisa incwadi yakho ye-Road-to-Health ekliniki.",
+    "birthdate_invalid": "Andiqondi loo mhla. Nceda uwubhale ngolu hlobo: 2024-01-15 (unyaka-inyanga-usuku)",
+    "reminder_message": "⏰ ISIKHUMBUZO: Umntwana wakho unokugonya ngo-%VACCINE_DATE% kwe-%VACCINE_NAME%.\n\nZisa incwadi yakho ye-Road-to-Health ekliniki.\n\nUnemibuzo? Ndibuze nje!",
+    "emergency_contacts": "🏥 IINOMBOLO ZONGXAMISEKO\n\n🚨 Iimeko eziphuthumayo eziyingozi ebomini:\n📞 10177\n\n🚑 ER24:\n📞 084 124\n\n🚑 Netcare 911:\n📞 082 911\n\n☎️ Iingcebiso zempilo (simahla):\n📞 0800 029 999",
+    "website_info": "Ndwendwela iwebhusayithi yethu ukuze ufumane uncedo olongezelelweyo:\nhttps://sister-botina-companion-app-744.created.app/\n\nUngafumana iikliniki kwaye uzimanyane noluntu lwabazali bethu!",
+    "data_privacy": "🔒 Ulwazi lwakho lukhuselekile nam. Ndisebenzisa kuphela umhla wokuzalwa womntwana wakho ukukuthumelela izikhumbuzo zokugonya. Lonke idatha ikhuselwe phantsi kwe-POPIA (umthetho wabucala waseMzantsi Afrika).",
+    "vaccine_schedule": {
+      "birth": {
+        "vaccines": ["BCG", "OPV 0"],
+        "age": "Ekuzalweni",
+        "description": "Izithinteli zokuqala zokukhusela i-TB nepoliyo"
+      },
+      "6_weeks": {
+        "vaccines": ["OPV 1", "RV 1", "DTaP-IPV-Hib-HepB 1", "PCV 1"],
+        "age": "Iiveki ezi-6 ubudala",
+        "description": "Izithinteli ezibalulekileyo zepoliyo, rotavirus kunye nezinye izifo"
+      },
+      "10_weeks": {
+        "vaccines": ["DTaP-IPV-Hib-HepB 2", "PCV 2"],
+        "age": "Iiveki ezili-10 ubudala",
+        "description": "Umjikelo wesibini wezithinteli"
+      },
+      "14_weeks": {
+        "vaccines": ["DTaP-IPV-Hib-HepB 3", "PCV 3", "RV 2"],
+        "age": "Iiveki ezili-14 ubudala",
+        "description": "Umjikelo wesithathu wezithinteli"
+      },
+      "9_months": {
+        "vaccines": ["Masisi 1"],
+        "age": "Iinyanga ezi-9 ubudala",
+        "description": "Isithintelo sokuqala semasisi"
+      },
+      "18_months": {
+        "vaccines": ["DTaP-IPV-Hib", "Masisi 2"],
+        "age": "Iinyanga ezili-18 ubudala",
+        "description": "Izithinteli zokuqinisa ukukhuseleka okuqhubekayo"
+      }
+    }
+  }
 }
