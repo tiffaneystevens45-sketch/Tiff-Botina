@@ -5,7 +5,8 @@
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",
-    "dev": "nodemon src/index.js"
+    "dev": "nodemon src/index.js",
+    "worker": "node src/reminderWorker.js"
   },
   "keywords": [
     "chatbot",
@@ -30,3 +31,4 @@
     "nodemon": "^3.1.4"
   }
 }
+
