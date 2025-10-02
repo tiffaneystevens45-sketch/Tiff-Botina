@@ -54,6 +54,8 @@ const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/
 const client = new Client({
   authStrategy: new LocalAuth(),
   puppeteer: {
+    headless: true,
+    executablePath: "/nix/store/qa9cnw4v5xkxyip6mb9kxqfq1z4x2dx1-chromium-138.0.7204.100/bin/chromium",
     args: [
       '--no-sandbox',
       '--disable-setuid-sandbox',
@@ -76,7 +78,6 @@ const userStates = new Map();
 // ============================================================================
 // HELPER FUNCTIONS
 // ============================================================================
-
 function detectLanguage(text) {
   const lowerText = text.toLowerCase();
   if (lowerText.match(/goeie|dankie|asseblief|hoe|wat|kan|jammer|help|inenting|entstof/i)) return 'af';
@@ -280,4 +281,3 @@ client.on('disconnected', reason => console.log('✗ Client disconnected:', reas
 // ============================================================================
 console.log('🚀 Starting Sister Botina 2.0...');
 client.initialize().catch(err => console.error('Failed to init WhatsApp client:', err));
-
