@@ -1,5 +1,43 @@
-// Sister Botina 2.0 - Natural Language WhatsApp Chatbot
-// For South African Parents - Immunization Support
+// Sister Botina 2.0 - Replit Compatible Version
+// Natural Language WhatsApp Chatbot for South African Parents
+
+// ============================================================================
+// KEEP-ALIVE SERVER (Prevents Replit from sleeping)
+// ============================================================================
+const express = require('express');
+const app = express();
+
+app.get('/', (req, res) => {
+  res.send(`
+    <html>
+      <head><title>Sister Botina 2.0</title></head>
+      <body style="font-family: Arial; padding: 40px; text-align: center;">
+        <h1>🤖 Sister Botina 2.0</h1>
+        <p style="color: green; font-size: 20px;">✓ WhatsApp Bot is Running</p>
+        <p>Uptime: ${Math.floor(process.uptime())} seconds</p>
+        <p style="color: #666;">This server keeps the bot alive on Replit</p>
+      </body>
+    </html>
+  `);
+});
+
+app.get('/health', (req, res) => {
+  res.json({ 
+    status: 'ok', 
+    uptime: process.uptime(),
+    memory: process.memoryUsage(),
+    timestamp: new Date().toISOString()
+  });
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`✓ Keep-alive server running on port ${PORT}`);
+});
+
+// ============================================================================
+// WHATSAPP BOT (Runs in parallel with Express)
+// ============================================================================
 
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
@@ -8,18 +46,23 @@ const fetch = require('node-fetch');
 const { readJsonFile, saveUserToSupabase, loadUsersFromSupabase } = require('./utils/fileHandler');
 const { startReminderScheduler } = require('./utils/reminderScheduler');
 
-// ============================================================================
-// CONFIGURATION
-// ============================================================================
-
-const GEMINI_API_KEY = "AIzaSyBaHbEbjIHrgJsJBdsNNEE3J10HO6QIBZc"; // Your API key
+// Configuration
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "AIzaSyBaHbEbjIHrgJsJBdsNNEE3J10HO6QIBZc";
 const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent";
 
-// Initialize WhatsApp Client
+// Initialize WhatsApp Client with Replit-optimized settings
 const client = new Client({
   authStrategy: new LocalAuth(),
   puppeteer: {
-    args: ['--no-sandbox', '--disable-setuid-sandbox']
+    args: [
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
+      '--disable-dev-shm-usage',
+      '--disable-accelerated-2d-canvas',
+      '--no-first-run',
+      '--no-zygote',
+      '--disable-gpu'
+    ]
   }
 });
 
@@ -32,34 +75,24 @@ const userStates = new Map();
 // HELPER FUNCTIONS
 // ============================================================================
 
-/**
- * Detect language from user input using keyword matching
- */
 function detectLanguage(text) {
   const lowerText = text.toLowerCase();
   
-  // Afrikaans indicators
   if (lowerText.match(/goeie|dankie|asseblief|hoe|wat|kan|jammer|help|inenting|entstof/i)) {
     return 'af';
   }
   
-  // isiZulu indicators
   if (lowerText.match(/sawubona|ngiyabonga|ngicela|kanjani|yini|usizo|ukugoma|umgomo/i)) {
     return 'zu';
   }
   
-  // Xhosa indicators
   if (lowerText.match(/molo|enkosi|nceda|njani|yintoni|uncedo|ukugonya|isithintelo/i)) {
     return 'xh';
   }
   
-  // Default to English
   return 'en';
 }
 
-/**
- * Check if message is a greeting
- */
 function isGreeting(text) {
   const greetings = [
     'hi', 'hello', 'hey', 'molo', 'sawubona', 'hallo', 
@@ -73,9 +106,6 @@ function isGreeting(text) {
   );
 }
 
-/**
- * Extract birth date from message (format: YYYY-MM-DD)
- */
 function extractBirthDate(text) {
   const datePattern = /(\d{4})-(\d{2})-(\d{2})/;
   const match = text.match(datePattern);
@@ -89,28 +119,21 @@ function extractBirthDate(text) {
   return null;
 }
 
-/**
- * Check if user is asking for emergency help
- */
 function isEmergencyRequest(text) {
   const emergencyKeywords = [
     'emergency', 'urgent', 'help me', 'emergency number', 'ambulance',
     'noodgeval', 'dringend', 'help my', 'ambulans',
     'isimo esiphuthumayo', 'ngishesha', 'ngisize', 'i-ambulensi',
-    'ungxamiseko', 'ngxamisekile', 'nceda', 'i-ambulensi'
+    'ungxamiseko', 'ngxamisekile', 'nceda'
   ];
   
   const lowerText = text.toLowerCase();
   return emergencyKeywords.some(keyword => lowerText.includes(keyword));
 }
 
-/**
- * Check if user is asking about the website
- */
 function isWebsiteRequest(text) {
   const websiteKeywords = [
-    'website', 'webwerf', 'iwebhusayithi', 'iwebhusayithi',
-    'online', 'link', 'url', 'community', 'forum'
+    'website', 'webwerf', 'iwebhusayithi', 'online', 'link', 'url', 'community', 'forum'
   ];
   
   const lowerText = text.toLowerCase();
@@ -118,12 +141,9 @@ function isWebsiteRequest(text) {
 }
 
 // ============================================================================
-// GEMINI API INTEGRATION
+// GEMINI API
 // ============================================================================
 
-/**
- * Build system prompt based on language and context
- */
 function buildSystemPrompt(language, userState) {
   const languageNames = {
     en: 'English',
@@ -184,17 +204,11 @@ IMPORTANT REMINDERS:
 
 RESPONSE STYLE:
 ❌ BAD: "Immunization is crucial for developing immunity against vaccine-preventable diseases."
-✅ GOOD: "Vaccines help protect your baby from getting very sick. They're safe and free at the clinic!"
-
-❌ BAD: "The DTaP-IPV-Hib-HepB vaccine contains antigens that..."
-✅ GOOD: "Your baby will get one injection that protects against 6 diseases. It's safe!"`;
+✅ GOOD: "Vaccines help protect your baby from getting very sick. They're safe and free at the clinic!"`;
 
   return prompt;
 }
 
-/**
- * Call Gemini API for natural language response
- */
 async function callGeminiAPI(systemPrompt, userMessage, chatHistory) {
   const messages = [
     { 
@@ -207,7 +221,6 @@ async function callGeminiAPI(systemPrompt, userMessage, chatHistory) {
     }
   ];
   
-  // Add recent chat history for context (last 3 exchanges = 6 messages)
   chatHistory.slice(-6).forEach(msg => {
     messages.push({
       role: msg.role === 'user' ? 'user' : 'model',
@@ -268,58 +281,43 @@ async function callGeminiAPI(systemPrompt, userMessage, chatHistory) {
 // MESSAGE HANDLERS
 // ============================================================================
 
-/**
- * Send welcome message
- */
 async function sendWelcomeMessage(message, language) {
-  const welcomeText = content[language].welcome;
+  const welcomeText = content[language]?.welcome || content.en?.welcome || 
+    "Hello! I'm Sister Botina. I help parents with child vaccinations. What would you like to know?";
   await message.reply(welcomeText);
 }
 
-/**
- * Handle emergency requests
- */
 async function handleEmergencyRequest(message, language) {
-  const emergencyText = content[language].emergency_contacts;
+  const emergencyText = content[language]?.emergency_contacts || content.en?.emergency_contacts ||
+    "Emergency: Call 10177\nER24: 084 124\nNetcare: 082 911";
   await message.reply(emergencyText);
 }
 
-/**
- * Handle website requests
- */
 async function handleWebsiteRequest(message, language) {
-  const websiteText = content[language].website_info;
+  const websiteText = content[language]?.website_info || content.en?.website_info ||
+    "Visit our website: https://sister-botina-companion-app-744.created.app/";
   await message.reply(websiteText);
 }
 
-/**
- * Process natural language query through Gemini
- */
 async function processNaturalLanguageQuery(message, userState) {
   const userMessage = message.body.trim();
   const language = userState.language;
   
-  // Add to chat history
   userState.chatHistory.push({
     role: 'user',
     content: userMessage,
     timestamp: new Date()
   });
   
-  // Build context-aware prompt
   const systemPrompt = buildSystemPrompt(language, userState);
   
   try {
-    // Call Gemini API
     const response = await callGeminiAPI(systemPrompt, userMessage, userState.chatHistory);
     
-    // Extract birth date if provided
     const birthDate = extractBirthDate(userMessage);
     if (birthDate && !userState.childBirthDate) {
       userState.childBirthDate = birthDate;
-      userState.hasProvidedBirthDate = true;
       
-      // Save to database
       await saveUserToSupabase({
         whatsappId: message.from,
         language: userState.language,
@@ -327,36 +325,23 @@ async function processNaturalLanguageQuery(message, userState) {
         chatHistory: userState.chatHistory
       });
       
-      // Send confirmation
-      const confirmMessage = content[language].birthdate_confirmed.replace('%BIRTHDATE%', birthDate);
+      const confirmMessage = (content[language]?.birthdate_confirmed || content.en?.birthdate_confirmed || 
+        "Thank you! I've saved your child's birth date as %BIRTHDATE%.")
+        .replace('%BIRTHDATE%', birthDate);
       await message.reply(confirmMessage);
-      
-      // Then send the AI response
-      await message.reply(response);
-    } else {
-      // Just send the AI response
-      await message.reply(response);
     }
     
-    // Add assistant response to history
+    await message.reply(response);
+    
     userState.chatHistory.push({
       role: 'assistant',
       content: response,
       timestamp: new Date()
     });
     
-    // Keep only last 10 exchanges (20 messages) to manage memory
     if (userState.chatHistory.length > 20) {
       userState.chatHistory = userState.chatHistory.slice(-20);
     }
-    
-    // Update user state in database periodically
-    await saveUserToSupabase({
-      whatsappId: message.from,
-      language: userState.language,
-      childBirthDate: userState.childBirthDate,
-      chatHistory: userState.chatHistory
-    });
     
   } catch (error) {
     console.error('Gemini API error:', error);
@@ -365,20 +350,12 @@ async function processNaturalLanguageQuery(message, userState) {
   }
 }
 
-// ============================================================================
-// MAIN HANDLER
-// ============================================================================
-
-/**
- * Handle incoming WhatsApp message
- */
 async function handleIncomingMessage(message) {
   const userId = message.from;
   const userMessage = message.body.trim();
   
   console.log(`Message from ${userId}: ${userMessage}`);
   
-  // Initialize or get user state
   if (!userStates.has(userId)) {
     userStates.set(userId, {
       language: null,
@@ -390,25 +367,21 @@ async function handleIncomingMessage(message) {
   
   const userState = userStates.get(userId);
   
-  // Detect language if not set
   if (!userState.language) {
     userState.language = detectLanguage(userMessage);
     console.log(`Language detected: ${userState.language}`);
   }
   
-  // Check for emergency requests first
   if (isEmergencyRequest(userMessage)) {
     await handleEmergencyRequest(message, userState.language);
     return;
   }
   
-  // Check for website requests
   if (isWebsiteRequest(userMessage)) {
     await handleWebsiteRequest(message, userState.language);
     return;
   }
   
-  // Handle first-time greetings
   if (!userState.hasGreeted && isGreeting(userMessage)) {
     userState.hasGreeted = true;
     userStates.set(userId, userState);
@@ -416,26 +389,17 @@ async function handleIncomingMessage(message) {
     return;
   }
   
-  // Process all other messages through NLP
   await processNaturalLanguageQuery(message, userState);
 }
 
-// ============================================================================
-// DATA LOADING
-// ============================================================================
-
-/**
- * Load initial data from JSON and Supabase
- */
 async function loadInitialData() {
   try {
     content = await readJsonFile('content.json');
-    console.log('✓ Content loaded from content.json');
+    console.log('✓ Content loaded');
     
     users = await loadUsersFromSupabase();
-    console.log(`✓ Loaded ${users.length} users from database`);
+    console.log(`✓ Loaded ${users.length} users`);
     
-    // Initialize userStates from persisted data
     users.forEach(user => {
       userStates.set(user.whatsappId, {
         language: user.language || 'en',
@@ -444,18 +408,15 @@ async function loadInitialData() {
         hasGreeted: true
       });
     });
-    
-    console.log('✓ Initial data loaded successfully');
   } catch (error) {
-    console.error('Failed to load initial data:', error);
-    // Continue anyway with empty data
+    console.error('Data loading error:', error);
     content = {};
     users = [];
   }
 }
 
 // ============================================================================
-// EVENT LISTENERS
+// WHATSAPP EVENT LISTENERS
 // ============================================================================
 
 client.on('qr', (qr) => {
@@ -467,7 +428,7 @@ client.on('qr', (qr) => {
 });
 
 client.on('authenticated', () => {
-  console.log('✓ WhatsApp authenticated successfully!');
+  console.log('✓ WhatsApp authenticated!');
 });
 
 client.on('auth_failure', (msg) => {
@@ -476,12 +437,11 @@ client.on('auth_failure', (msg) => {
 
 client.on('ready', async () => {
   console.log('\n========================================');
-  console.log('🎉 Sister Botina 2.0 is ready!');
+  console.log('Sister Botina 2.0 is ready!');
   console.log('========================================\n');
   
   await loadInitialData();
   
-  // Start reminder scheduler if needed
   if (typeof startReminderScheduler === 'function') {
     startReminderScheduler(client, users, content);
     console.log('✓ Reminder scheduler started');
@@ -489,13 +449,7 @@ client.on('ready', async () => {
 });
 
 client.on('message', async (message) => {
-  // Ignore group messages
-  if (message.from.endsWith('@g.us')) {
-    return;
-  }
-  
-  // Ignore messages from self
-  if (message.fromMe) {
+  if (message.from.endsWith('@g.us') || message.fromMe) {
     return;
   }
   
@@ -512,7 +466,7 @@ client.on('message', async (message) => {
 });
 
 client.on('disconnected', (reason) => {
-  console.log('✗ Client was disconnected:', reason);
+  console.log('✗ Client disconnected:', reason);
 });
 
 // ============================================================================
@@ -521,9 +475,8 @@ client.on('disconnected', (reason) => {
 
 console.log('Starting Sister Botina 2.0...');
 console.log('Node version:', process.version);
-console.log('Environment:', process.env.NODE_ENV || 'development');
+console.log('Express server started for keep-alive');
 
 client.initialize().catch(err => {
-  console.error('Failed to initialize client:', err);
-  process.exit(1);
+  console.error('Failed to initialize WhatsApp client:', err);
 });
