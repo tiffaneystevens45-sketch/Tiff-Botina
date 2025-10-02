@@ -1,8 +1,8 @@
-// Sister Botina 2.0 - Replit Compatible Version
-// Natural Language WhatsApp Chatbot for South African Parents
+// Sister Botina 2.0 - WhatsApp Chatbot for South African Parents
+// Natural Language Processing with Gemini AI
 
 // ============================================================================
-// KEEP-ALIVE SERVER (Prevents Replit from sleeping)
+// KEEP-ALIVE SERVER (For Replit)
 // ============================================================================
 const express = require('express');
 const app = express();
@@ -12,10 +12,9 @@ app.get('/', (req, res) => {
     <html>
       <head><title>Sister Botina 2.0</title></head>
       <body style="font-family: Arial; padding: 40px; text-align: center;">
-        <h1>🤖 Sister Botina 2.0</h1>
-        <p style="color: green; font-size: 20px;">✓ WhatsApp Bot is Running</p>
+        <h1>Sister Botina 2.0</h1>
+        <p style="color: green; font-size: 20px;">WhatsApp Bot is Running</p>
         <p>Uptime: ${Math.floor(process.uptime())} seconds</p>
-        <p style="color: #666;">This server keeps the bot alive on Replit</p>
       </body>
     </html>
   `);
@@ -25,32 +24,44 @@ app.get('/health', (req, res) => {
   res.json({ 
     status: 'ok', 
     uptime: process.uptime(),
-    memory: process.memoryUsage(),
     timestamp: new Date().toISOString()
   });
 });
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`✓ Keep-alive server running on port ${PORT}`);
+  console.log(`Keep-alive server running on port ${PORT}`);
 });
 
 // ============================================================================
-// WHATSAPP BOT (Runs in parallel with Express)
+// WHATSAPP BOT
 // ============================================================================
 
 const { Client, LocalAuth } = require('whatsapp-web.js');
 const qrcode = require('qrcode-terminal');
 const moment = require('moment');
 const fetch = require('node-fetch');
+const fs = require('fs');
+const path = require('path');
+
+// Import utility functions
 const { readJsonFile, saveUserToSupabase, loadUsersFromSupabase } = require('./utils/fileHandler');
 const { startReminderScheduler } = require('./utils/reminderScheduler');
 
-// Configuration
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "AIzaSyBaHbEbjIHrgJsJBdsNNEE3J10HO6QIBZc";
+// ============================================================================
+// CONFIGURATION
+// ============================================================================
+
+// Check for API key
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+if (!GEMINI_API_KEY) {
+  console.error('ERROR: GEMINI_API_KEY environment variable is required but not set.');
+  console.error('Please add GEMINI_API_KEY to your Replit Secrets or .env file.');
+}
+
 const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent";
 
-// Initialize WhatsApp Client with Replit-optimized settings
+// Initialize WhatsApp Client with optimized settings
 const client = new Client({
   authStrategy: new LocalAuth({
     dataPath: '.wwebjs_auth'
@@ -203,7 +214,7 @@ SOUTH AFRICAN VACCINATION SCHEDULE:
 - 9 months: Measles injection
 - 18 months: Booster injections, Measles (2nd)
 
-COMMON PARENT WORRIES (address these with empathy):
+COMMON PARENT WORRIES:
 - "Are vaccines safe?" → Yes, very safe. Millions of children get them
 - "Too many vaccines at once?" → Safe! Baby's immune system can handle it
 - "Side effects?" → Usually mild: sore spot, slight fever. Goes away quickly
@@ -213,16 +224,16 @@ COMMON PARENT WORRIES (address these with empathy):
 IMPORTANT REMINDERS:
 - Always bring Road-to-Health book to clinic
 - All vaccines are FREE at government clinics
-- It's never too late to catch up on missed vaccines
-
-RESPONSE STYLE:
-❌ BAD: "Immunization is crucial for developing immunity against vaccine-preventable diseases."
-✅ GOOD: "Vaccines help protect your baby from getting very sick. They're safe and free at the clinic!"`;
+- It's never too late to catch up on missed vaccines`;
 
   return prompt;
 }
 
 async function callGeminiAPI(systemPrompt, userMessage, chatHistory) {
+  if (!GEMINI_API_KEY) {
+    throw new Error('Gemini API key not configured');
+  }
+
   const messages = [
     { 
       role: 'user', 
@@ -408,10 +419,10 @@ async function handleIncomingMessage(message) {
 async function loadInitialData() {
   try {
     content = await readJsonFile('content.json');
-    console.log('✓ Content loaded');
+    console.log('Content loaded from content.json');
     
     users = await loadUsersFromSupabase();
-    console.log(`✓ Loaded ${users.length} users`);
+    console.log(`Loaded ${users.length} users from database`);
     
     users.forEach(user => {
       userStates.set(user.whatsappId, {
@@ -421,10 +432,36 @@ async function loadInitialData() {
         hasGreeted: true
       });
     });
+    
+    console.log('Initial data loaded successfully');
   } catch (error) {
     console.error('Data loading error:', error);
     content = {};
     users = [];
+  }
+}
+
+// ============================================================================
+// CLEANUP FUNCTIONS
+// ============================================================================
+
+function cleanupChromeProfiles() {
+  try {
+    const authPath = path.join(__dirname, '.wwebjs_auth');
+    const lockFiles = [
+      path.join(authPath, 'SingletonLock'),
+      path.join(authPath, 'SingletonSocket'),
+      path.join(authPath, 'SingletonCookie')
+    ];
+    
+    lockFiles.forEach(file => {
+      if (fs.existsSync(file)) {
+        fs.unlinkSync(file);
+        console.log(`Removed lock file: ${path.basename(file)}`);
+      }
+    });
+  } catch (error) {
+    // Lock files don't exist, which is fine
   }
 }
 
@@ -441,11 +478,11 @@ client.on('qr', (qr) => {
 });
 
 client.on('authenticated', () => {
-  console.log('✓ WhatsApp authenticated!');
+  console.log('WhatsApp authenticated successfully');
 });
 
 client.on('auth_failure', (msg) => {
-  console.error('✗ Authentication failed:', msg);
+  console.error('Authentication failed:', msg);
 });
 
 client.on('ready', async () => {
@@ -457,7 +494,7 @@ client.on('ready', async () => {
   
   if (typeof startReminderScheduler === 'function') {
     startReminderScheduler(client, users, content);
-    console.log('✓ Reminder scheduler started');
+    console.log('Reminder scheduler started');
   }
 });
 
@@ -479,8 +516,36 @@ client.on('message', async (message) => {
 });
 
 client.on('disconnected', (reason) => {
-  console.log('✗ Client disconnected:', reason);
+  console.log('Client disconnected:', reason);
 });
+
+// ============================================================================
+// INITIALIZATION WITH RETRY LOGIC
+// ============================================================================
+
+async function initializeWithRetry(maxRetries = 3) {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      console.log(`Initialization attempt ${i + 1}/${maxRetries}...`);
+      await client.initialize();
+      console.log('Client initialized successfully');
+      return;
+    } catch (error) {
+      console.error(`Attempt ${i + 1} failed:`, error.message);
+      if (i < maxRetries - 1) {
+        console.log('Retrying in 5 seconds...');
+        await new Promise(resolve => setTimeout(resolve, 5000));
+        cleanupChromeProfiles(); // Clean up before retry
+      } else {
+        console.error('\n========================================');
+        console.error('Failed to initialize after multiple attempts');
+        console.error('This may be due to Replit/Chromium issues');
+        console.error('Consider running locally for more stability');
+        console.error('========================================\n');
+      }
+    }
+  }
+}
 
 // ============================================================================
 // START THE BOT
@@ -490,6 +555,8 @@ console.log('Starting Sister Botina 2.0...');
 console.log('Node version:', process.version);
 console.log('Express server started for keep-alive');
 
-client.initialize().catch(err => {
-  console.error('Failed to initialize WhatsApp client:', err);
-});
+// Clean up before starting
+cleanupChromeProfiles();
+
+// Start with retry logic
+initializeWithRetry();
